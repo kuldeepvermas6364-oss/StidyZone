@@ -1,0 +1,274 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Core student or admin account record (PII isolated to owner/admin).",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 254 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "provider": { "type": "string", "enum": ["password", "google.com"] },
+        "emailVerified": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["student", "educator", "moderator", "super_admin"] },
+        "disabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "provider", "emailVerified", "role", "disabled", "createdAt", "lastLoginAt"]
+    },
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Student preparation preferences, selected UP Board stream/subjects, daily target, and exam countdown dates.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "primaryExam": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "selectedStream": { "type": "string", "enum": ["science", "commerce", "arts"] },
+        "selectedSubjects": { "type": "array" },
+        "preferredLanguage": { "type": "string", "enum": ["en", "hi"] },
+        "studyMedium": { "type": "string", "enum": ["hindi", "english", "bilingual"] },
+        "dailyStudyTargetMinutes": { "type": "number" },
+        "boardRollTargetYear": { "type": "number" },
+        "jeeTargetYear": { "type": "number" },
+        "schoolOrCoaching": { "type": "string", "maxLength": 150 },
+        "district": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "primaryExam", "preferredLanguage", "studyMedium", "dailyStudyTargetMinutes", "updatedAt"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Bilingual subject catalog per exam track and academic session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "code": { "type": "string", "maxLength": 32 },
+        "name": { "type": "object" },
+        "order": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "chapterCount": { "type": "number" },
+        "sourceUrl": { "type": "string", "maxLength": 500 },
+        "verificationStatus": { "type": "string", "enum": ["verified", "awaiting_verification"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "examTrack", "code", "name", "order", "isPublished", "chapterCount", "updatedAt"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Syllabus chapter unit linked to a subject.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "unitNumber": { "type": "number" },
+        "title": { "type": "object" },
+        "summary": { "type": "object" },
+        "estimatedHours": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "subjectId", "examTrack", "unitNumber", "title", "summary", "estimatedHours", "isPublished", "order"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "Granular syllabus topic within a chapter.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "chapterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "object" },
+        "syllabusCode": { "type": "string", "maxLength": 40 },
+        "difficulty": { "type": "string", "enum": ["foundation", "standard", "advanced"] },
+        "isPublished": { "type": "boolean" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "chapterId", "subjectId", "title", "syllabusCode", "difficulty", "isPublished", "order"]
+    },
+    "StudyMaterial": {
+      "title": "StudyMaterial",
+      "description": "PDF notes, NCERT books, PYQs, and video lecture metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "chapterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "kind": { "type": "string", "enum": ["pdf_notes", "ncert_book", "pyq_paper", "formula_sheet", "video_lecture"] },
+        "title": { "type": "object" },
+        "language": { "type": "string", "enum": ["en", "hi", "bilingual"] },
+        "storagePath": { "type": "string", "maxLength": 500 },
+        "isPublished": { "type": "boolean" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "createdByUid": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "examTrack", "subjectId", "chapterId", "kind", "title", "language", "storagePath", "isPublished", "publishedAt", "createdByUid"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "Bilingual practice and exam question item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "kind": { "type": "string", "enum": ["mcq_single", "mcq_multi", "numerical", "subjective_up_board"] },
+        "prompt": { "type": "object" },
+        "marks": { "type": "number" },
+        "negativeMarks": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examTrack", "subjectId", "chapterId", "kind", "prompt", "marks", "negativeMarks", "difficulty", "isPublished"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Timed chapter quiz definition.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "object" },
+        "durationMinutes": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "examTrack", "subjectId", "chapterId", "title", "durationMinutes", "totalMarks", "isPublished", "createdAt"]
+    },
+    "MockTest": {
+      "title": "MockTest",
+      "description": "Full-length UP Board model paper or JEE Main CBT test.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "title": { "type": "object" },
+        "pattern": { "type": "string", "enum": ["up-board-model", "jee-main-nta", "jee-advanced-paper"] },
+        "durationMinutes": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examTrack", "title", "pattern", "durationMinutes", "totalMarks", "isPublished"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "Student-owned saved resource bookmark.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "itemType": { "type": "string", "enum": ["chapter", "topic", "studyMaterial", "question"] },
+        "itemId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "note": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "itemType", "itemId", "examTrack", "createdAt"]
+    },
+    "StudyProgress": {
+      "title": "StudyProgress",
+      "description": "Student-owned chapter completion status, revision status, completed topics, and last studied timestamp.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "streamId": { "type": "string", "enum": ["science", "commerce", "arts"] },
+        "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "chapterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed", "needs_revision"] },
+        "practiceStatus": { "type": "string", "enum": ["not_started", "in_progress", "completed"] },
+        "completedTopicIds": { "type": "array" },
+        "studyMinutesLogged": { "type": "number" },
+        "completionPercent": { "type": "number" },
+        "lastActivityAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "examTrack", "subjectId", "chapterId", "status", "studyMinutesLogged", "completionPercent", "lastActivityAt"]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Server/super-admin managed educator and moderator role assignments.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "role": { "type": "string", "enum": ["educator", "moderator", "super_admin"] },
+        "active": { "type": "boolean" },
+        "grantedByUid": { "type": "string", "maxLength": 128 },
+        "grantedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "role", "active", "grantedByUid", "grantedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Owner-isolated student/admin account metadata."
+    },
+    "/profiles/{userId}": {
+      "schema": { "$ref": "#/entities/StudentProfile" },
+      "description": "Owner-isolated student preparation preferences, selected stream, and daily goals."
+    },
+    "/curriculums/{examId}/sessions/{sessionId}/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/Subject" },
+      "description": "Admin-managed exam and session-specific subjects."
+    },
+    "/curriculums/{examId}/sessions/{sessionId}/subjects/{subjectId}/chapters/{chapterId}": {
+      "schema": { "$ref": "#/entities/Chapter" },
+      "description": "Admin-managed chapters within a subject."
+    },
+    "/curriculums/{examId}/sessions/{sessionId}/subjects/{subjectId}/chapters/{chapterId}/topics/{topicId}": {
+      "schema": { "$ref": "#/entities/Topic" },
+      "description": "Admin-managed topics within a chapter."
+    },
+    "/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/Subject" },
+      "description": "Bilingual subjects per exam track."
+    },
+    "/chapters/{chapterId}": {
+      "schema": { "$ref": "#/entities/Chapter" },
+      "description": "Chapter units per subject."
+    },
+    "/topics/{topicId}": {
+      "schema": { "$ref": "#/entities/Topic" },
+      "description": "Granular syllabus topics per chapter."
+    },
+    "/studyMaterials/{materialId}": {
+      "schema": { "$ref": "#/entities/StudyMaterial" },
+      "description": "PDF notes, NCERT books, PYQs, and video lectures."
+    },
+    "/questions/{questionId}": {
+      "schema": { "$ref": "#/entities/Question" },
+      "description": "Question bank for practice quizzes and mock tests."
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/Quiz" },
+      "description": "Chapter-level practice quizzes."
+    },
+    "/mockTests/{mockTestId}": {
+      "schema": { "$ref": "#/entities/MockTest" },
+      "description": "Full-length mock tests."
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "User-scoped saved bookmarks."
+    },
+    "/studyProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/StudyProgress" },
+      "description": "User-scoped chapter study progress."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Admin/educator role documents used by security rules."
+    }
+  }
+}

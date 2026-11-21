@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "PrepZone – UP Board Class 12 & JEE Preparation",
+  "short_name": "PrepZone",
+  "description": "Bilingual (Hindi & English) student preparation platform for UP Board Class 12, JEE Main, and JEE Advanced.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

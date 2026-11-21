@@ -1,0 +1,6 @@
+{
+  "name": "PrepZone",
+  "description": "Bilingual (Hindi & English) UP Board Class 12, JEE Main, and JEE Advanced preparation platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
