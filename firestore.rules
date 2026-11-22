@@ -38,12 +38,32 @@ service cloud.firestore {
       return isVerifiedUser() && request.auth.token.email == 'did78994@gmail.com';
     }
 
-    function isAdmin() {
+    function isSuperAdmin() {
       return isBootstrappedAdmin() || (
-        isVerifiedUser() &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true
+        isVerifiedUser() && (
+          (exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/adminRoles/$(request.auth.uid)).data.active == true &&
+            get(/databases/$(database)/documents/adminRoles/$(request.auth.uid)).data.role == 'super_admin') ||
+          (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true &&
+            get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin')
+        )
       );
+    }
+
+    function isContentAdmin() {
+      return isVerifiedUser() && (
+        (exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/adminRoles/$(request.auth.uid)).data.active == true &&
+          get(/databases/$(database)/documents/adminRoles/$(request.auth.uid)).data.role in ['content_admin', 'educator', 'moderator']) ||
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['content_admin', 'educator', 'moderator'])
+      );
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || isContentAdmin();
     }
 
     function isValidExamTrack(track) {
@@ -152,6 +172,21 @@ service cloud.firestore {
         && data.lastActivityAt is timestamp;
     }
 
+    function isValidReadingHistory(data, entryId) {
+      return data.keys().hasAll(['id', 'uid', 'materialId', 'examTrack', 'subjectId', 'materialType', 'lastViewedPage', 'lastAccessedAt'])
+        && data.keys().hasOnly(['id', 'uid', 'materialId', 'examTrack', 'subjectId', 'chapterId', 'materialType', 'lastViewedPage', 'totalPages', 'lastAccessedAt'])
+        && isValidId(data.id) && data.id == entryId
+        && isValidId(data.uid) && data.uid == request.auth.uid
+        && isValidId(data.materialId)
+        && isValidExamTrack(data.examTrack)
+        && isValidId(data.subjectId)
+        && (!('chapterId' in data) || data.chapterId == null || isValidId(data.chapterId))
+        && data.materialType is string && data.materialType.size() >= 2 && data.materialType.size() <= 40
+        && data.lastViewedPage is number && data.lastViewedPage >= 1 && data.lastViewedPage <= 5000
+        && (!('totalPages' in data) || data.totalPages == null || (data.totalPages is number && data.totalPages >= 1 && data.totalPages <= 5000))
+        && data.lastAccessedAt is timestamp;
+    }
+
     function isValidAdminCurriculum(data) {
       return data.keys().hasAll(['id', 'examTrack', 'isPublished'])
         && isValidId(data.id)
@@ -163,11 +198,35 @@ service cloud.firestore {
       return data.keys().hasAll(['uid', 'role', 'active', 'grantedByUid', 'grantedAt'])
         && data.keys().hasOnly(['uid', 'role', 'permissions', 'active', 'grantedByUid', 'grantedAt'])
         && isValidId(data.uid) && data.uid == adminId
-        && data.role is string && data.role in ['educator', 'moderator', 'super_admin']
+        && data.role is string && data.role in ['super_admin', 'content_admin', 'educator', 'moderator']
         && data.active is bool
         && isValidId(data.grantedByUid)
         && data.grantedAt is timestamp
         && (!('permissions' in data) || (data.permissions is list && data.permissions.size() <= 20));
+    }
+
+    function isValidAdminPermissionDoc(data, adminId) {
+      return data.keys().hasAll(['uid', 'permissions', 'updatedByUid', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'permissions', 'updatedByUid', 'updatedAt'])
+        && isValidId(data.uid) && data.uid == adminId
+        && data.permissions is list && data.permissions.size() <= 30
+        && isValidId(data.updatedByUid)
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLogDoc(data, logId) {
+      return data.keys().hasAll(['id', 'adminUid', 'adminEmail', 'adminRole', 'action', 'targetType', 'status', 'createdAt'])
+        && data.keys().hasOnly(['id', 'adminUid', 'adminEmail', 'adminRole', 'action', 'targetType', 'targetId', 'summary', 'status', 'createdAt'])
+        && isValidId(data.id) && data.id == logId
+        && isValidId(data.adminUid) && data.adminUid == request.auth.uid
+        && data.adminEmail is string && data.adminEmail.size() >= 3 && data.adminEmail.size() <= 254
+        && data.adminRole is string && data.adminRole.size() >= 2 && data.adminRole.size() <= 40
+        && data.action is string && data.action.size() >= 2 && data.action.size() <= 80
+        && data.targetType is string && data.targetType.size() >= 2 && data.targetType.size() <= 60
+        && (!('targetId' in data) || (data.targetId is string && data.targetId.size() <= 128))
+        && (!('summary' in data) || (data.summary is string && data.summary.size() <= 500))
+        && data.status is string && data.status in ['success', 'failure', 'denied']
+        && data.createdAt == request.time;
     }
 
     // -------------------------------------------------------------------------
@@ -246,7 +305,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // User-Scoped Bookmarks & Study Progress
+    // User-Scoped Bookmarks, Study Progress & Reading History
     // -------------------------------------------------------------------------
     match /bookmarks/{bookmarkId} {
       allow get: if isValidId(bookmarkId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
@@ -291,6 +350,28 @@ service cloud.firestore {
           )
         );
       allow delete: if isValidId(progressId) && isAdmin();
+    }
+
+    match /readingHistory/{entryId} {
+      allow get: if isValidId(entryId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(entryId)
+        && isVerifiedUser()
+        && isValidReadingHistory(incoming(), entryId)
+        && incoming().lastAccessedAt == request.time;
+      allow update: if isValidId(entryId)
+        && isVerifiedUser()
+        && isValidReadingHistory(incoming(), entryId)
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().materialId == existing().materialId
+            && incoming().lastAccessedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['lastViewedPage', 'totalPages', 'lastAccessedAt'])
+          )
+        );
+      allow delete: if isValidId(entryId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
     }
 
     // -------------------------------------------------------------------------
@@ -370,13 +451,453 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Admin Roles Collection
+    // Prompt 4: Question Bank, Isolated Answer Keys, Exam Attempts & Analytics
+    // -------------------------------------------------------------------------
+    match /questionBank/{questionId} {
+      allow get: if isValidId(questionId) && (existing().isPublished == true || isAdmin());
+      allow list: if resource.data.isPublished == true || isAdmin();
+      allow create, update: if isValidId(questionId)
+        && isAdmin()
+        && isValidAdminCurriculum(incoming())
+        && isValidBilingualMap(incoming().prompt)
+        && incoming().marks is number && incoming().marks >= 0
+        && incoming().negativeMarks is number && incoming().negativeMarks >= 0;
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    match /questionAnswerKeys/{questionId} {
+      allow get, list, create, update, delete: if isValidId(questionId) && isAdmin();
+    }
+
+    match /questionSets/{setId} {
+      allow get: if isValidId(setId) && (existing().isPublished == true || isAdmin());
+      allow list: if resource.data.isPublished == true || isAdmin();
+      allow create, update: if isValidId(setId) && isAdmin() && isValidAdminCurriculum(incoming()) && isValidBilingualMap(incoming().title);
+      allow delete: if isValidId(setId) && isAdmin();
+    }
+
+    match /examConfigurations/{configId} {
+      allow get: if isValidId(configId) && (existing().isPublished == true || isAdmin());
+      allow list: if resource.data.isPublished == true || isAdmin();
+      allow create, update: if isValidId(configId) && isAdmin() && isValidAdminCurriculum(incoming()) && isValidBilingualMap(incoming().title);
+      allow delete: if isValidId(configId) && isAdmin();
+    }
+
+    match /quizAttempts/{attemptId} {
+      allow get: if isValidId(attemptId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(attemptId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'configId', 'examTrack', 'status', 'startedAt'])
+        && isValidId(incoming().id) && incoming().id == attemptId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().configId)
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().status == 'in_progress'
+        && incoming().startedAt == request.time;
+      allow update: if isValidId(attemptId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && existing().status == 'in_progress'
+            && incoming().uid == existing().uid
+            && incoming().configId == existing().configId
+            && incoming().startedAt == existing().startedAt
+            && incoming().status in ['in_progress', 'submitted']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['answers', 'visitedIds', 'markedForReviewIds', 'currentQuestionIndex', 'timeSpentSeconds', 'status', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(attemptId) && isAdmin();
+    }
+
+    match /examAttempts/{attemptId} {
+      allow get: if isValidId(attemptId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(attemptId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'configId', 'examTrack', 'status', 'startedAt'])
+        && isValidId(incoming().id) && incoming().id == attemptId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().configId)
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().status == 'in_progress'
+        && incoming().startedAt == request.time;
+      allow update: if isValidId(attemptId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && existing().status == 'in_progress'
+            && incoming().uid == existing().uid
+            && incoming().configId == existing().configId
+            && incoming().startedAt == existing().startedAt
+            && incoming().status in ['in_progress', 'submitted']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['answers', 'visitedIds', 'markedForReviewIds', 'currentQuestionIndex', 'timeSpentSeconds', 'status', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(attemptId) && isAdmin();
+    }
+
+    match /studentAnswers/{answerId} {
+      allow get: if isValidId(answerId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(answerId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'attemptId', 'questionId', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == answerId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().attemptId)
+        && isValidId(incoming().questionId)
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(answerId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().attemptId == existing().attemptId
+            && incoming().questionId == existing().questionId
+            && incoming().updatedAt == request.time
+          )
+        );
+      allow delete: if isValidId(answerId) && isAdmin();
+    }
+
+    match /questionBookmarks/{bookmarkId} {
+      allow get: if isValidId(bookmarkId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(bookmarkId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'questionId', 'examTrack', 'tag', 'createdAt'])
+        && incoming().keys().hasOnly(['id', 'uid', 'questionId', 'examTrack', 'subjectId', 'chapterId', 'tag', 'note', 'createdAt'])
+        && isValidId(incoming().id) && incoming().id == bookmarkId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().questionId)
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().tag in ['bookmark', 'difficult', 'revision']
+        && (!('note' in incoming()) || (incoming().note is string && incoming().note.size() <= 400))
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(bookmarkId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().questionId == existing().questionId
+            && incoming().createdAt == existing().createdAt
+            && incoming().diff(existing()).affectedKeys().hasOnly(['tag', 'note'])
+          )
+        );
+      allow delete: if isValidId(bookmarkId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /practiceHistory/{entryId} {
+      allow get: if isValidId(entryId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(entryId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'questionId', 'examTrack', 'isCorrect', 'attemptedAt'])
+        && isValidId(incoming().id) && incoming().id == entryId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().questionId)
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().isCorrect is bool
+        && incoming().attemptedAt == request.time;
+      allow update: if isValidId(entryId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().questionId == existing().questionId
+            && incoming().diff(existing()).affectedKeys().hasOnly(['markedForRevision', 'savedDifficult'])
+          )
+        );
+      allow delete: if isValidId(entryId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /performanceAnalytics/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isValidId(userId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidId(incoming().uid) && incoming().uid == userId
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /weakTopics/{topicEntryId} {
+      allow get: if isValidId(topicEntryId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, update: if isValidId(topicEntryId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'topicId', 'accuracyPercent', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == topicEntryId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().topicId)
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(topicEntryId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // -------------------------------------------------------------------------
+    // Prompt 5: AI Study Assistant, PDF RAG, Quizzes, Recommendations & Plans
+    // -------------------------------------------------------------------------
+    match /aiConversations/{conversationId} {
+      allow get: if isValidId(conversationId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(conversationId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'title', 'examTrack', 'languageMode', 'createdAt', 'updatedAt'])
+        && incoming().keys().hasOnly(['id', 'uid', 'title', 'examTrack', 'subjectId', 'chapterId', 'materialId', 'languageMode', 'createdAt', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == conversationId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && incoming().title is string && incoming().title.size() >= 1 && incoming().title.size() <= 120
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().languageMode in ['en', 'hi', 'hinglish']
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(conversationId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && incoming().title is string && incoming().title.size() >= 1 && incoming().title.size() <= 120
+            && isValidExamTrack(incoming().examTrack)
+            && incoming().languageMode in ['en', 'hi', 'hinglish']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'examTrack', 'subjectId', 'chapterId', 'materialId', 'languageMode', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(conversationId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /aiMessages/{messageId} {
+      allow get: if isValidId(messageId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(messageId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'conversationId', 'uid', 'role', 'content', 'createdAt'])
+        && incoming().keys().hasOnly(['id', 'conversationId', 'uid', 'role', 'content', 'feedback', 'createdAt'])
+        && isValidId(incoming().id) && incoming().id == messageId
+        && isValidId(incoming().conversationId)
+        && exists(/databases/$(database)/documents/aiConversations/$(incoming().conversationId))
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && incoming().role in ['user', 'assistant']
+        && incoming().content is string && incoming().content.size() >= 1 && incoming().content.size() <= 20000
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(messageId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().conversationId == existing().conversationId
+            && incoming().createdAt == existing().createdAt
+            && incoming().feedback in ['helpful', 'needs_review']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['feedback'])
+          )
+        );
+      allow delete: if isValidId(messageId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /aiFeedback/{feedbackId} {
+      allow get: if isValidId(feedbackId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(feedbackId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'messageId', 'rating', 'createdAt'])
+        && incoming().keys().hasOnly(['id', 'uid', 'messageId', 'rating', 'note', 'createdAt'])
+        && isValidId(incoming().id) && incoming().id == feedbackId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidId(incoming().messageId)
+        && incoming().rating in ['helpful', 'needs_review']
+        && (!('note' in incoming()) || (incoming().note is string && incoming().note.size() <= 300))
+        && incoming().createdAt == request.time;
+      allow delete: if isValidId(feedbackId) && isAdmin();
+    }
+
+    match /aiUsage/{usageId} {
+      allow get: if isValidId(usageId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if isValidId(usageId) && isAdmin();
+    }
+
+    match /documentChunks/{chunkId} {
+      allow get: if isValidId(chunkId) && isSignedIn();
+      allow list: if isSignedIn() && resource.data.materialId is string;
+      allow create, update, delete: if isValidId(chunkId) && isAdmin();
+    }
+
+    match /documentEmbeddings/{embeddingId} {
+      allow get: if isValidId(embeddingId) && isSignedIn();
+      allow list: if isSignedIn() && resource.data.materialId is string;
+      allow create, update, delete: if isValidId(embeddingId) && isAdmin();
+    }
+
+    match /generatedQuizzes/{quizId} {
+      allow get: if isValidId(quizId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(quizId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'examTrack', 'subjectId', 'chapterId', 'sourceType', 'createdAt'])
+        && isValidId(incoming().id) && incoming().id == quizId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidExamTrack(incoming().examTrack)
+        && isValidId(incoming().subjectId)
+        && isValidId(incoming().chapterId)
+        && incoming().sourceType == 'ai_generated'
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(quizId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().sourceType == 'ai_generated'
+            && incoming().createdAt == existing().createdAt
+            && incoming().diff(existing()).affectedKeys().hasOnly(['savedToBank', 'title'])
+          )
+        );
+      allow delete: if isValidId(quizId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /generatedSummaries/{summaryId} {
+      allow get: if isValidId(summaryId) && isSignedIn();
+      allow list: if isSignedIn() && resource.data.chapterId is string;
+      allow create, update, delete: if isValidId(summaryId) && isAdmin();
+    }
+
+    match /studyRecommendations/{recId} {
+      allow get: if isValidId(recId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, update: if isValidId(recId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'examTrack', 'priority', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == recId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().priority in ['high', 'medium', 'low']
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(recId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    match /aiStudyPlans/{planId} {
+      allow get: if isValidId(planId) && isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(planId)
+        && isVerifiedUser()
+        && incoming().keys().hasAll(['id', 'uid', 'examTrack', 'status', 'dailyHours', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == planId
+        && isValidId(incoming().uid) && incoming().uid == request.auth.uid
+        && isValidExamTrack(incoming().examTrack)
+        && incoming().status in ['draft', 'approved']
+        && incoming().dailyHours is number && incoming().dailyHours >= 0.5 && incoming().dailyHours <= 16
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(planId)
+        && isVerifiedUser()
+        && (
+          isAdmin() || (
+            existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().examTrack == existing().examTrack
+            && incoming().status in ['draft', 'approved']
+            && incoming().dailyHours is number && incoming().dailyHours >= 0.5 && incoming().dailyHours <= 16
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'approvedAt', 'weeklySchedule', 'dailyTargets', 'dailyHours', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(planId) && isVerifiedUser() && (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // -------------------------------------------------------------------------
+    // Prompt 6: Super Admin, Content Admin, Permissions, Audit Logs & System Settings
     // -------------------------------------------------------------------------
     match /admins/{adminId} {
-      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
-      allow list: if isAdmin();
-      allow create, update: if isValidId(adminId) && isAdmin() && isValidAdminRoleDoc(incoming(), adminId);
-      allow delete: if isValidId(adminId) && isAdmin();
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create, update: if isValidId(adminId) && isSuperAdmin() && isValidAdminRoleDoc(incoming(), adminId);
+      allow delete: if isValidId(adminId) && isSuperAdmin();
+    }
+
+    match /adminRoles/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create, update: if isValidId(adminId) && isSuperAdmin() && isValidAdminRoleDoc(incoming(), adminId);
+      allow delete: if isValidId(adminId) && isSuperAdmin();
+    }
+
+    match /adminPermissions/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create, update: if isValidId(adminId) && isSuperAdmin() && isValidAdminPermissionDoc(incoming(), adminId);
+      allow delete: if isValidId(adminId) && isSuperAdmin();
+    }
+
+    match /adminAuditLogs/{logId} {
+      allow get: if isValidId(logId) && (isSuperAdmin() || (isAdmin() && existing().adminUid == request.auth.uid));
+      allow list: if isSuperAdmin() || (isAdmin() && resource.data.adminUid == request.auth.uid);
+      allow create: if isValidId(logId) && isAdmin() && isValidAuditLogDoc(incoming(), logId);
+      allow update, delete: if false;
+    }
+
+    match /uploadJobs/{jobId} {
+      allow get: if isValidId(jobId) && isAdmin();
+      allow list: if isAdmin() && resource.data.adminUid is string;
+      allow create, update: if isValidId(jobId)
+        && isAdmin()
+        && incoming().keys().hasAll(['id', 'adminUid', 'fileCount', 'successCount', 'failedCount', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == jobId
+        && isValidId(incoming().adminUid)
+        && incoming().status in ['preview', 'completed', 'partial', 'failed'];
+      allow delete: if isValidId(jobId) && isSuperAdmin();
+    }
+
+    match /aiSettings/{settingId} {
+      allow get: if isValidId(settingId) && isAdmin();
+      allow list: if isAdmin() && resource.data.model is string;
+      allow create, update: if isValidId(settingId)
+        && isAdmin()
+        && incoming().keys().hasAll(['id', 'enabled', 'model', 'dailyRequestLimit', 'dailyTokenLimit', 'rateLimitPerMin', 'updatedByUid', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == settingId
+        && incoming().enabled is bool
+        && incoming().model is string && incoming().model.size() >= 2 && incoming().model.size() <= 80
+        && isValidId(incoming().updatedByUid)
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(settingId) && isSuperAdmin();
+    }
+
+    match /systemSettings/{settingId} {
+      allow get: if isValidId(settingId) && isAdmin();
+      allow list: if isSuperAdmin();
+      allow create, update: if isValidId(settingId)
+        && isSuperAdmin()
+        && incoming().keys().hasAll(['id', 'siteTitle', 'maintenanceMode', 'allowNewRegistrations', 'updatedByUid', 'updatedAt'])
+        && isValidId(incoming().id) && incoming().id == settingId
+        && incoming().siteTitle is string && incoming().siteTitle.size() >= 2 && incoming().siteTitle.size() <= 120
+        && incoming().maintenanceMode is bool
+        && incoming().allowNewRegistrations is bool
+        && isValidId(incoming().updatedByUid)
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(settingId) && isSuperAdmin();
+    }
+
+    match /adminIntegrationStatus/{integrationId} {
+      allow get: if isValidId(integrationId) && isAdmin();
+      allow list: if isAdmin() && resource.data.integrationId is string;
+      allow create, update: if isValidId(integrationId)
+        && isAdmin()
+        && incoming().keys().hasAll(['id', 'integrationId', 'status', 'verifiedAt', 'updatedByUid'])
+        && isValidId(incoming().id) && incoming().id == integrationId
+        && incoming().integrationId is string && incoming().integrationId.size() >= 2 && incoming().integrationId.size() <= 80
+        && incoming().status in ['connected', 'setup_required', 'unavailable']
+        && isValidId(incoming().updatedByUid)
+        && incoming().verifiedAt == request.time;
+      allow delete: if isValidId(integrationId) && isSuperAdmin();
     }
   }
 }
+

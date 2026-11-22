@@ -26,10 +26,11 @@ This document records the planned Firebase services, collection contracts, and s
 - `mockTests`: Full-length UP Board model papers & NTA JEE Main CBT tests
 - `bookmarks`: User-scoped saved items (`uid == request.auth.uid`)
 - `studyProgress`: User-scoped chapter completion & logged minutes
+- `readingHistory`: User-scoped study material opening history & last viewed PDF page progress (`uid == request.auth.uid`)
 - `adminRoles`: Server/super-admin managed educator and moderator permissions
 
 ## 3. Planned Firestore & Storage Security Rules
-- **Student private data** (`users/{uid}`, `profiles/{uid}`, `bookmarks`, `studyProgress`):
+- **Student private data** (`users/{uid}`, `profiles/{uid}`, `bookmarks`, `studyProgress`, `readingHistory`):
   - `allow read, write: if request.auth != null && request.auth.uid == uid;`
   - Prevent client self-escalation of `role` field on `users/{uid}`.
 - **Published curriculum & assessments** (`subjects`, `chapters`, `topics`, `studyMaterials`, `quizzes`, `mockTests`):
@@ -38,6 +39,7 @@ This document records the planned Firebase services, collection contracts, and s
 - **Answer keys & admin roles** (`questions`, `adminRoles`):
   - `adminRoles`: readable only by the owning user or super-admin; writable only via Admin SDK / super-admin.
   - `questions`: restrict answer explanations during live tests or serve graded evaluation via server route.
-- **Firebase Storage**:
-  - `allow read: if request.auth != null;` (or public read for free sample materials)
-  - `allow write: if isAdmin();` with strict MIME type (`application/pdf`) and size limits.
+- **Document Storage & Signed Delivery (`server/storageProvider.ts`, `server.ts`)**:
+  - `LocalSignedStorageProvider` keeps PDFs in private server-side `/storage/materials/` (never static `public/`) and issues short-lived HMAC-SHA256 signed tokens after verifying auth on protected materials (`accessLevel === 'authenticated'`), strict path confinement, and `%PDF-` header checks.
+  - `FirebaseStorageProviderStub` defines the identical interface for Cloud Storage signed URLs when `FIREBASE_STORAGE_BUCKET` and server credentials are configured in production.
+

@@ -16,7 +16,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const { signIn, register, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTarget = (location.state as { from?: string } | null)?.from || '/profile';
+  const nextParam = new URLSearchParams(location.search).get('next');
+  const safeNext =
+    nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
+  const redirectTarget =
+    (location.state as { from?: string } | null)?.from || safeNext || '/profile';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');

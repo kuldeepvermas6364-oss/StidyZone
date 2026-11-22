@@ -22,6 +22,7 @@ const en: TranslationDict = {
   'nav.aiAssistant': 'AI Study Assistant',
   'nav.progressAnalytics': 'Progress & Analytics',
   'nav.bookmarks': 'Bookmarks',
+  'nav.integrations': 'Integrations Hub',
   'nav.settings': 'Settings',
   'nav.profile': 'Student Profile',
   'nav.signIn': 'Sign In',
@@ -122,7 +123,7 @@ const en: TranslationDict = {
   'dashboard.quickAccess.pdfTitle': 'PDF Library',
   'dashboard.quickAccess.pdfDesc': 'NCERT books, notes & PYQ archive (Prompt 3)',
   'dashboard.quickAccess.testsTitle': 'Practice & Mock Tests',
-  'dashboard.quickAccess.testsDesc': 'Topic quizzes & CBT simulator (Prompt 4)',
+  'dashboard.quickAccess.testsDesc': 'Question Bank, Quizzes & JEE/UP Board Simulator',
   'dashboard.quickAccess.plannerTitle': 'Study Planner',
   'dashboard.quickAccess.plannerDesc': 'Weekly timetable & reminders (Prompt 5)',
   'dashboard.quickAccess.open': 'Open',
@@ -146,9 +147,10 @@ const en: TranslationDict = {
   'modules.practiceTests.subtitle': 'Topic-wise practice sets and full-length computer-based mock tests.',
   'modules.revisionCenter.subtitle': 'Formula recall decks, error logs, and spaced-repetition revision tools.',
   'modules.studyPlanner.subtitle': 'Personalized weekly schedules, chapter milestones, and study reminders.',
-  'modules.aiAssistant.subtitle': 'Server-side Gemini-powered bilingual concept explainer and doubt solver.',
+  'modules.aiAssistant.subtitle': 'Bilingual AI tutor with step-by-step solving, page-cited PDF Q&A, quizzes, and study planning.',
   'modules.progressAnalytics.subtitle': 'Accurate subject mastery metrics, test accuracy trends, and study streaks.',
   'modules.bookmarks.subtitle': 'Saved chapters, PDFs, lectures, and practice questions synced to your profile.',
+  'modules.integrations.subtitle': 'Connected Google Workspace services, exam centre Google Maps, and Cloud integrations.',
   'modules.settings.subtitle': 'Manage language, theme, daily targets, exam dates, and system readiness.',
 
   // Settings Page
@@ -276,12 +278,12 @@ const en: TranslationDict = {
   'syllabus.progressLabel': 'Chapter Progress',
   'syllabus.studyMaterialsTitle': 'Related Study Materials',
   'syllabus.studyMaterialsDesc':
-    'PDF notes, NCERT chapter books, formula sheets, and recorded video lectures for this chapter will connect here in Prompt 3.',
+    'Authorized chapter notes, NCERT textbooks, formula sheets, model papers, and video lectures connected to this chapter.',
   'syllabus.openPdfLibrary': 'Open PDF Library',
   'syllabus.openVideoLectures': 'Open Video Lectures',
-  'syllabus.practiceSectionTitle': 'Chapter Practice & PYQs',
+  'syllabus.practiceSectionTitle': 'Chapter Practice & Timed Quizzes',
   'syllabus.practiceSectionDesc':
-    'Topic quizzes, UP Board model questions, and NTA JEE CBT practice sets for this chapter will connect here in Prompt 4.',
+    'Launch immediate feedback practice questions or start a timed chapter quiz aligned to this chapter.',
   'syllabus.openPracticeTests': 'Open Practice & Mock Tests',
   'syllabus.studyGuideLabel': 'Supplementary Study Note',
 
@@ -313,6 +315,181 @@ const en: TranslationDict = {
   'dashboard.activity.updatedOn': 'Updated',
   'header.searchCategoryModules': 'Platform Modules',
   'header.searchCategorySyllabus': 'Subjects & Chapters',
+  'header.searchCategoryMaterials': 'Study Materials & Lectures',
+
+  // Prompt 3: Material Types & Labels
+  'materials.type.all': 'All Material Types',
+  'materials.type.ncert_book': 'Official Textbooks',
+  'materials.type.chapter_notes': 'Chapter Notes',
+  'materials.type.class_notes': 'Class Notes',
+  'materials.type.revision_notes': 'Revision Notes',
+  'materials.type.important_questions': 'Important Questions',
+  'materials.type.pyq_paper': 'Previous-Year Papers',
+  'materials.type.sample_paper': 'Sample Papers',
+  'materials.type.model_paper': 'Model Papers',
+  'materials.type.formula_sheet': 'Formula Sheets',
+  'materials.type.derivations': 'Derivations',
+  'materials.type.practical_guide': 'Practical Guides',
+  'materials.type.official_syllabus': 'Official Syllabus',
+  'materials.type.video_lecture': 'Video Lectures',
+
+  'materials.lang.all': 'All Languages',
+  'materials.lang.en': 'English',
+  'materials.lang.hi': 'Hindi',
+  'materials.lang.bilingual': 'Bilingual (EN + HI)',
+
+  'materials.source.all': 'All Sources',
+  'materials.source.official': 'Official Only',
+  'materials.source.supplementary': 'Supplementary Guides',
+
+  'materials.badge.official': 'Official Source',
+  'materials.badge.supplementary': 'Supplementary Guide',
+  'materials.badge.signInRequired': 'Sign-In Required',
+  'materials.badge.awaitingVerification': 'Awaiting Verification',
+
+  // PDF Library Page
+  'materials.library.eyebrow': 'Signed Delivery & Verified Academic Portals',
+  'materials.library.title': 'PDF Library & Study Materials',
+  'materials.library.subtitle':
+    'Browse curriculum-mapped chapter notes, formula sheets, revision guides, and verified official UPMSP, NCERT, NTA JEE Main, and IIT JEE Advanced links.',
+  'materials.library.searchPlaceholder': 'Search notes, formulas, chapters, or official portals (EN/HI)...',
+  'materials.library.searchLabel': 'Search study materials',
+  'materials.library.allExams': 'All Exam Tracks',
+  'materials.library.allStreams': 'All Streams',
+  'materials.library.allSubjects': 'All Subjects',
+  'materials.library.allChapters': 'All Chapters',
+  'materials.library.allSessions': 'All Sessions',
+  'materials.library.clearFilters': 'Clear All Filters',
+  'materials.library.resultsCount': '{count} study resources matching your filters',
+  'materials.library.popularCategories': 'Browse by Category',
+  'materials.library.quickSubjects': 'Subject Shortcuts',
+  'materials.library.emptyTitle': 'No study materials match these filters',
+  'materials.library.emptyBody':
+    'Try clearing one or more filters or switching exam tracks. PrepZone only lists real, legally distributable materials.',
+  'materials.library.recentlyViewed': 'Recently Viewed',
+  'materials.library.clearHistory': 'Clear History',
+  'materials.library.pageProgress': 'Page {page} / {total}',
+  'materials.library.pagination': 'Page {current} of {total}',
+  'materials.library.prevPage': 'Previous',
+  'materials.library.nextPage': 'Next',
+  'materials.library.openBookmarkList': 'View All Bookmarks',
+
+  // Material Actions & Metadata
+  'materials.action.previewPdf': 'Read PDF',
+  'materials.action.resumePdf': 'Resume Page {page}',
+  'materials.action.downloadPdf': 'Download PDF',
+  'materials.action.downloading': 'Preparing...',
+  'materials.action.openOfficialPortal': 'Visit Official Portal',
+  'materials.action.watchLecture': 'Open Lecture',
+  'materials.action.saveBookmark': 'Save Bookmark',
+  'materials.action.savedBookmark': 'Bookmarked',
+  'materials.action.signInToBookmark': 'Sign in to save bookmarks',
+  'materials.action.viewChapter': 'Open Syllabus Chapter',
+  'materials.meta.publisher': 'Publisher',
+  'materials.meta.author': 'Author',
+  'materials.meta.verifiedOn': 'Verified',
+  'materials.meta.pages': '{count} pages',
+
+  // PDF Viewer Page
+  'pdfViewer.backToLibrary': 'Back to PDF Library',
+  'pdfViewer.loading': 'Authorizing and rendering PDF pages...',
+  'pdfViewer.pageOf': 'Page {current} of {total}',
+  'pdfViewer.jumpToPage': 'Go to page',
+  'pdfViewer.zoomOut': 'Zoom out',
+  'pdfViewer.zoomIn': 'Zoom in',
+  'pdfViewer.fitWidth': 'Fit Width',
+  'pdfViewer.fullscreen': 'Fullscreen',
+  'pdfViewer.exitFullscreen': 'Exit Fullscreen',
+  'pdfViewer.searchPlaceholder': 'Search inside PDF...',
+  'pdfViewer.searchAction': 'Find',
+  'pdfViewer.searchMatches': '{count} page matches',
+  'pdfViewer.searchNoMatches': 'No matches found in document',
+  'pdfViewer.authTitle': 'Student Sign-In Required',
+  'pdfViewer.authBody':
+    'This protected document requires an active PrepZone student account to authorize signed viewing or download.',
+  'pdfViewer.signInCta': 'Sign In to Read PDF',
+  'pdfViewer.errorTitle': 'Unable to Load Document',
+  'pdfViewer.errorMissing': 'The requested study material could not be found or has been unpublished.',
+  'pdfViewer.errorGeneric': 'Document authorization or PDF rendering failed. Please retry or return to the library.',
+  'pdfViewer.externalOnlyTitle': 'Official External Portal Entry',
+  'pdfViewer.externalOnlyBody':
+    'Per publisher copyright rules, this official resource opens directly on its verified portal rather than inside a PrepZone copy.',
+  'pdfViewer.retry': 'Retry Loading',
+
+  // Video Lectures
+  'videos.eyebrow': 'Verified Open Academic Lectures',
+  'videos.title': 'Video Lectures Library',
+  'videos.subtitle':
+    'Structured NCERT / PM eVIDYA and IIT PAL chapter lectures mapped to UP Board Class 12, JEE Main, and JEE Advanced.',
+  'videos.allPlaylists': 'All Playlists',
+  'videos.resultsCount': '{count} lectures available',
+  'videos.emptyTitle': 'No lectures match your filters',
+  'videos.emptyBody': 'Try adjusting the exam track, subject, language, or playlist filter.',
+  'videos.backToList': 'Back to Video Lectures',
+  'videos.playlistHeading': 'Series Playlist',
+  'videos.noDownloadNotice':
+    'External streaming via official educational portal only. Direct video file downloads are intentionally disabled.',
+  'videos.launchPortal': 'Play on Official Portal',
+  'videos.relatedNotes': 'Related Chapter Study Material',
+
+  // Bookmarks Page
+  'bookmarks.eyebrow': 'Saved Study Resources',
+  'bookmarks.title': 'Your Bookmarks',
+  'bookmarks.subtitle':
+    'Quick access to saved PDF notes, official portals, video lectures, and syllabus chapters synced to your account.',
+  'bookmarks.guestTitle': 'Sign in to access saved bookmarks',
+  'bookmarks.guestBody':
+    'Your saved PDFs, lectures, and syllabus topics are stored securely per student account.',
+  'bookmarks.emptyTitle': 'No bookmarks saved yet',
+  'bookmarks.emptyBody':
+    'Use the bookmark button on any PDF material, video lecture, or chapter card to build your quick revision list.',
+  'bookmarks.sectionMaterials': 'Saved PDFs & Official Portals ({count})',
+  'bookmarks.sectionVideos': 'Saved Video Lectures ({count})',
+  'bookmarks.sectionChapters': 'Saved Chapters & Topics ({count})',
+  'bookmarks.remove': 'Remove Bookmark',
+
+  // Chapter Detail Material Buckets
+  'chapterMaterials.heading': 'Chapter Study Materials & Video Lectures',
+  'chapterMaterials.bucket.notes': 'Chapter Notes & Derivations',
+  'chapterMaterials.bucket.textbooks': 'Textbooks & Official Syllabi',
+  'chapterMaterials.bucket.pyqs': 'Previous-Year Question Papers',
+  'chapterMaterials.bucket.samples': 'Sample & Model Papers',
+  'chapterMaterials.bucket.formulas': 'Formula Sheets',
+  'chapterMaterials.bucket.revision': 'Revision Notes',
+  'chapterMaterials.bucket.videos': 'Video Lectures',
+  'chapterMaterials.bucket.other': 'Practical & Supplementary Guides',
+  'chapterMaterials.emptyTitle': 'No materials mapped to this specific chapter yet',
+  'chapterMaterials.emptyBody':
+    'Browse the full PDF Library or Official Portals for subject-level resources.',
+
+  // Dashboard Prompt 3 Section
+  'dashboard.recentMaterials.title': 'Recently Viewed Study Materials',
+  'dashboard.recentMaterials.emptyTitle': 'No study materials opened yet',
+  'dashboard.recentMaterials.emptyBody':
+    'Open any PDF guide or video lecture from the library to track reading pages and quick resume links here.',
+  'dashboard.recentMaterials.browseLibrary': 'Browse PDF Library',
+
+  // Dashboard Prompt 4 Section
+  'dashboard.assessments.title': 'Practice, Mock Tests & Performance',
+  'dashboard.assessments.accuracy': 'Practice Accuracy',
+  'dashboard.assessments.weakChapters': 'Weak Chapters Detected',
+  'dashboard.assessments.dailyQuizTitle': 'Daily Practice Quiz',
+  'dashboard.assessments.mockTestsTitle': 'CBT & Board Simulators',
+  'dashboard.assessments.recentResults': 'Recent Test Results',
+  'dashboard.assessments.emptyResults': 'No tests submitted yet. Attempt a timed quiz or mock exam to view real scores.',
+  'dashboard.assessments.emptyWeak': 'No weak chapters flagged yet — metrics appear automatically from your practice & quiz accuracy.',
+  'bookmarks.sectionQuestions': 'Saved Practice Questions ({count})',
+
+  // Dashboard Prompt 5 AI Study Assistant Card
+  'dashboard.aiCard.title': 'PrepZone AI Study Assistant',
+  'dashboard.aiCard.subtitle':
+    'Ask syllabus-aware doubts in Hindi, English, or Hinglish, get page-cited PDF answers, chapter summaries, AI practice quizzes, and personalized study plans.',
+  'dashboard.aiCard.openWorkspace': 'Open AI Workspace',
+  'dashboard.aiCard.askDoubt': 'Ask a Doubt',
+  'dashboard.aiCard.pdfTutor': 'PDF AI Tutor',
+  'dashboard.aiCard.aiQuiz': 'Generate AI Quiz',
+  'dashboard.aiCard.summary': 'Chapter Summary',
+  'dashboard.aiCard.studyPlan': 'Study Plan',
 };
 
 const hi: TranslationDict = {
@@ -335,6 +512,7 @@ const hi: TranslationDict = {
   'nav.aiAssistant': 'एआई अध्ययन सहायक',
   'nav.progressAnalytics': 'प्रगति व विश्लेषण',
   'nav.bookmarks': 'बुकमार्क',
+  'nav.integrations': 'एकीकरण हब',
   'nav.settings': 'सेटिंग्स',
   'nav.profile': 'छात्र प्रोफ़ाइल',
   'nav.signIn': 'लॉगिन करें',
@@ -435,7 +613,7 @@ const hi: TranslationDict = {
   'dashboard.quickAccess.pdfTitle': 'पीडीएफ लाइब्रेरी',
   'dashboard.quickAccess.pdfDesc': 'एनसीईआरटी पुस्तकें, नोट्स व पीवाईक्यू (चरण 3)',
   'dashboard.quickAccess.testsTitle': 'अभ्यास व मॉक टेस्ट',
-  'dashboard.quickAccess.testsDesc': 'विषय क्विज़ व सीबीटी सिम्युलेटर (चरण 4)',
+  'dashboard.quickAccess.testsDesc': 'प्रश्न बैंक, क्विज़ व जेईई/यूपी बोर्ड सिम्युलेटर',
   'dashboard.quickAccess.plannerTitle': 'अध्ययन योजनाकार',
   'dashboard.quickAccess.plannerDesc': 'साप्ताहिक समय-सारणी व अनुस्मारक (चरण 5)',
   'dashboard.quickAccess.open': 'खोलें',
@@ -459,9 +637,10 @@ const hi: TranslationDict = {
   'modules.practiceTests.subtitle': 'विषय-वार अभ्यास सेट और पूर्ण कंप्यूटर आधारित मॉक टेस्ट।',
   'modules.revisionCenter.subtitle': 'सूत्र फ्लैशकार्ड, त्रुटि लॉग और दोहराव आधारित पुनरीक्षण उपकरण।',
   'modules.studyPlanner.subtitle': 'साप्ताहिक समय-सारणी, अध्याय लक्ष्य और अध्ययन अनुस्मारक।',
-  'modules.aiAssistant.subtitle': 'सर्वर-साइड जेमिनी आधारित द्विभाषी अवधारणा और संदेह समाधान।',
+  'modules.aiAssistant.subtitle': 'द्विभाषी AI ट्यूटर: चरण-दर-चरण हल, पृष्ठ-उद्धृत PDF प्रश्नोत्तर, क्विज़ और अध्ययन योजना।',
   'modules.progressAnalytics.subtitle': 'सटीक विषय दक्षता, टेस्ट सटीकता रुझान और अध्ययन निरंतरता।',
   'modules.bookmarks.subtitle': 'सहेजे गए अध्याय, पीडीएफ, व्याख्यान और अभ्यास प्रश्न।',
+  'modules.integrations.subtitle': 'कनेक्टेड गूगल वर्कस्पेस सेवाएँ, परीक्षा केंद्र गूगल मैप्स और क्लाउड एकीकरण।',
   'modules.settings.subtitle': 'भाषा, थीम, दैनिक लक्ष्य, परीक्षा तिथियाँ और सिस्टम तैयारी प्रबंधित करें।',
 
   // Settings Page
@@ -589,12 +768,12 @@ const hi: TranslationDict = {
   'syllabus.progressLabel': 'अध्याय प्रगति',
   'syllabus.studyMaterialsTitle': 'संबंधित अध्ययन सामग्री',
   'syllabus.studyMaterialsDesc':
-    'इस अध्याय के पीडीएफ नोट्स, एनसीईआरटी पुस्तकें, सूत्र शीट और वीडियो व्याख्यान चरण 3 में यहाँ जोड़े जाएँगे।',
+    'इस अध्याय से जुड़े अधिकृत नोट्स, एनसीईआरटी पुस्तक पोर्टल, सूत्र शीट, मॉडल पेपर व वीडियो व्याख्यान।',
   'syllabus.openPdfLibrary': 'पीडीएफ लाइब्रेरी खोलें',
   'syllabus.openVideoLectures': 'वीडियो व्याख्यान खोलें',
-  'syllabus.practiceSectionTitle': 'अध्याय अभ्यास व पीवाईक्यू',
+  'syllabus.practiceSectionTitle': 'अध्याय अभ्यास व समयबद्ध क्विज़',
   'syllabus.practiceSectionDesc':
-    'इस अध्याय की क्विज़, यूपी बोर्ड मॉडल प्रश्न और एनटीए जेईई सीबीटी अभ्यास सेट चरण 4 में यहाँ जुड़ेंगे।',
+    'इस अध्याय से जुड़े तत्काल उत्तर जाँच प्रश्न या समयबद्ध अध्याय क्विज़ सीधे शुरू करें।',
   'syllabus.openPracticeTests': 'अभ्यास व मॉक टेस्ट खोलें',
   'syllabus.studyGuideLabel': 'सहायक अध्ययन टिप्पणी',
 
@@ -626,6 +805,181 @@ const hi: TranslationDict = {
   'dashboard.activity.updatedOn': 'अपडेट',
   'header.searchCategoryModules': 'प्लेटफ़ॉर्म मॉड्यूल',
   'header.searchCategorySyllabus': 'विषय व अध्याय',
+  'header.searchCategoryMaterials': 'अध्ययन सामग्री व व्याख्यान',
+
+  // Prompt 3: Material Types & Labels
+  'materials.type.all': 'सभी सामग्री प्रकार',
+  'materials.type.ncert_book': 'आधिकारिक पाठ्यपुस्तकें',
+  'materials.type.chapter_notes': 'अध्याय नोट्स',
+  'materials.type.class_notes': 'कक्षा नोट्स',
+  'materials.type.revision_notes': 'पुनरीक्षण नोट्स',
+  'materials.type.important_questions': 'महत्वपूर्ण प्रश्न',
+  'materials.type.pyq_paper': 'पिछले वर्षों के प्रश्नपत्र',
+  'materials.type.sample_paper': 'सैंपल पेपर',
+  'materials.type.model_paper': 'मॉडल पेपर',
+  'materials.type.formula_sheet': 'सूत्र शीट',
+  'materials.type.derivations': 'व्युत्पत्तियाँ',
+  'materials.type.practical_guide': 'प्रायोगिक मार्गदर्शिका',
+  'materials.type.official_syllabus': 'आधिकारिक पाठ्यक्रम',
+  'materials.type.video_lecture': 'वीडियो व्याख्यान',
+
+  'materials.lang.all': 'सभी भाषाएँ',
+  'materials.lang.en': 'अंग्रेज़ी',
+  'materials.lang.hi': 'हिन्दी',
+  'materials.lang.bilingual': 'द्विभाषी (EN + HI)',
+
+  'materials.source.all': 'सभी स्रोत',
+  'materials.source.official': 'केवल आधिकारिक स्रोत',
+  'materials.source.supplementary': 'सहायक अध्ययन गाइड',
+
+  'materials.badge.official': 'आधिकारिक स्रोत',
+  'materials.badge.supplementary': 'सहायक सामग्री',
+  'materials.badge.signInRequired': 'लॉगिन आवश्यक',
+  'materials.badge.awaitingVerification': 'सत्यापन प्रतीक्षित',
+
+  // PDF Library Page
+  'materials.library.eyebrow': 'सत्यापित दस्तावेज़ वितरण व आधिकारिक पोर्टल',
+  'materials.library.title': 'पीडीएफ लाइब्रेरी एवं अध्ययन सामग्री',
+  'materials.library.subtitle':
+    'पाठ्यक्रम से जुड़े अध्याय नोट्स, सूत्र शीट, पुनरीक्षण गाइड तथा यूपीएमएसपी, एनसीईआरटी, एनटीए जेईई मेन व आईआईटी जेईई एडवांस्ड के आधिकारिक लिंक खोजें।',
+  'materials.library.searchPlaceholder': 'नोट्स, सूत्र, अध्याय या आधिकारिक पोर्टल खोजें (हिंदी/अंग्रेज़ी)...',
+  'materials.library.searchLabel': 'अध्ययन सामग्री खोजें',
+  'materials.library.allExams': 'सभी परीक्षा ट्रैक',
+  'materials.library.allStreams': 'सभी स्ट्रीम',
+  'materials.library.allSubjects': 'सभी विषय',
+  'materials.library.allChapters': 'सभी अध्याय',
+  'materials.library.allSessions': 'सभी सत्र',
+  'materials.library.clearFilters': 'सभी फ़िल्टर हटाएँ',
+  'materials.library.resultsCount': 'आपके फ़िल्टर से {count} अध्ययन संसाधन मिले',
+  'materials.library.popularCategories': 'श्रेणी के अनुसार देखें',
+  'materials.library.quickSubjects': 'विषय त्वरित लिंक',
+  'materials.library.emptyTitle': 'इन फ़िल्टर से कोई सामग्री नहीं मिली',
+  'materials.library.emptyBody':
+    'कृपया फ़िल्टर बदलें या परीक्षा ट्रैक बदलकर खोजें। PrepZone केवल वास्तविक और वैध संसाधन ही सूचीबद्ध करता है।',
+  'materials.library.recentlyViewed': 'हाल ही में देखी गई सामग्री',
+  'materials.library.clearHistory': 'इतिहास साफ़ करें',
+  'materials.library.pageProgress': 'पृष्ठ {page} / {total}',
+  'materials.library.pagination': 'पृष्ठ {current} / {total}',
+  'materials.library.prevPage': 'पिछला',
+  'materials.library.nextPage': 'अगला',
+  'materials.library.openBookmarkList': 'सभी बुकमार्क देखें',
+
+  // Material Actions & Metadata
+  'materials.action.previewPdf': 'पीडीएफ पढ़ें',
+  'materials.action.resumePdf': 'पृष्ठ {page} से जारी रखें',
+  'materials.action.downloadPdf': 'पीडीएफ डाउनलोड करें',
+  'materials.action.downloading': 'तैयार हो रहा है...',
+  'materials.action.openOfficialPortal': 'आधिकारिक पोर्टल खोलें',
+  'materials.action.watchLecture': 'व्याख्यान खोलें',
+  'materials.action.saveBookmark': 'बुकमार्क सहेजें',
+  'materials.action.savedBookmark': 'बुकमार्क सहेजा गया',
+  'materials.action.signInToBookmark': 'बुकमार्क सहेजने के लिए लॉगिन करें',
+  'materials.action.viewChapter': 'अध्याय पाठ्यक्रम देखें',
+  'materials.meta.publisher': 'प्रकाशक',
+  'materials.meta.author': 'लेखक',
+  'materials.meta.verifiedOn': 'सत्यापित',
+  'materials.meta.pages': '{count} पृष्ठ',
+
+  // PDF Viewer Page
+  'pdfViewer.backToLibrary': 'पीडीएफ लाइब्रेरी पर लौटें',
+  'pdfViewer.loading': 'दस्तावेज़ सत्यापित और रेंडर हो रहा है...',
+  'pdfViewer.pageOf': 'पृष्ठ {current} / {total}',
+  'pdfViewer.jumpToPage': 'पृष्ठ संख्या',
+  'pdfViewer.zoomOut': 'ज़ूम कम करें',
+  'pdfViewer.zoomIn': 'ज़ूम बढ़ाएँ',
+  'pdfViewer.fitWidth': 'चौड़ाई अनुसार फिट',
+  'pdfViewer.fullscreen': 'पूर्ण स्क्रीन',
+  'pdfViewer.exitFullscreen': 'पूर्ण स्क्रीन बंद करें',
+  'pdfViewer.searchPlaceholder': 'पीडीएफ के भीतर खोजें...',
+  'pdfViewer.searchAction': 'खोजें',
+  'pdfViewer.searchMatches': '{count} पृष्ठों में परिणाम',
+  'pdfViewer.searchNoMatches': 'दस्तावेज़ में कोई परिणाम नहीं मिला',
+  'pdfViewer.authTitle': 'छात्र लॉगिन आवश्यक है',
+  'pdfViewer.authBody':
+    'इस संरक्षित दस्तावेज़ को पढ़ने या डाउनलोड करने के लिए सक्रिय PrepZone छात्र खाते से लॉगिन आवश्यक है।',
+  'pdfViewer.signInCta': 'पढ़ने के लिए लॉगिन करें',
+  'pdfViewer.errorTitle': 'दस्तावेज़ लोड नहीं हो सका',
+  'pdfViewer.errorMissing': 'अनुरोधित अध्ययन सामग्री नहीं मिली या अभी प्रकाशित नहीं है।',
+  'pdfViewer.errorGeneric': 'दस्तावेज़ सत्यापन या पीडीएफ रेंडरिंग में त्रुटि हुई। कृपया पुनः प्रयास करें।',
+  'pdfViewer.externalOnlyTitle': 'आधिकारिक बाहरी पोर्टल लिंक',
+  'pdfViewer.externalOnlyBody':
+    'कॉपीराइट नियमों के सम्मान में यह आधिकारिक संसाधन सीधे उसकी सत्यापित वेबसाइट पर खुलता है।',
+  'pdfViewer.retry': 'पुनः प्रयास करें',
+
+  // Video Lectures
+  'videos.eyebrow': 'सत्यापित शैक्षणिक व्याख्यान',
+  'videos.title': 'वीडियो व्याख्यान लाइब्रेरी',
+  'videos.subtitle':
+    'यूपी बोर्ड कक्षा 12, जेईई मेन और जेईई एडवांस्ड से जुड़े एनसीईआरटी / पीएम ई-विद्या और IIT PAL अध्याय व्याख्यान।',
+  'videos.allPlaylists': 'सभी प्लेलिस्ट',
+  'videos.resultsCount': '{count} व्याख्यान उपलब्ध',
+  'videos.emptyTitle': 'आपके फ़िल्टर से कोई व्याख्यान नहीं मिला',
+  'videos.emptyBody': 'कृपया परीक्षा ट्रैक, विषय, भाषा या प्लेलिस्ट फ़िल्टर बदलकर देखें।',
+  'videos.backToList': 'सभी वीडियो व्याख्यानों पर लौटें',
+  'videos.playlistHeading': 'श्रृंखला प्लेलिस्ट',
+  'videos.noDownloadNotice':
+    'आधिकारिक शैक्षणिक पोर्टल पर ऑनलाइन प्लेबैक — प्रत्यक्ष वीडियो फ़ाइल डाउनलोड अक्षम है।',
+  'videos.launchPortal': 'आधिकारिक पोर्टल पर देखें',
+  'videos.relatedNotes': 'संबंधित अध्याय अध्ययन सामग्री',
+
+  // Bookmarks Page
+  'bookmarks.eyebrow': 'सहेजे गए संसाधन',
+  'bookmarks.title': 'आपके बुकमार्क',
+  'bookmarks.subtitle':
+    'आपके छात्र खाते में सहेजे गए पीडीएफ नोट्स, आधिकारिक पोर्टल, वीडियो व्याख्यान और पाठ्यक्रम अध्याय।',
+  'bookmarks.guestTitle': 'सहेजे गए बुकमार्क देखने के लिए लॉगिन करें',
+  'bookmarks.guestBody':
+    'आपके सहेजे गए पीडीएफ, व्याख्यान और अध्याय सुरक्षित रूप से आपके छात्र खाते में संग्रहीत होते हैं।',
+  'bookmarks.emptyTitle': 'अभी कोई बुकमार्क सहेजा नहीं गया है',
+  'bookmarks.emptyBody':
+    'त्वरित पुनरीक्षण सूची बनाने के लिए किसी भी पीडीएफ, व्याख्यान या अध्याय पर बुकमार्क बटन दबाएँ।',
+  'bookmarks.sectionMaterials': 'सहेजी गई पीडीएफ व आधिकारिक पोर्टल ({count})',
+  'bookmarks.sectionVideos': 'सहेजे गए वीडियो व्याख्यान ({count})',
+  'bookmarks.sectionChapters': 'सहेजे गए अध्याय व टॉपिक ({count})',
+  'bookmarks.remove': 'बुकमार्क हटाएँ',
+
+  // Chapter Detail Material Buckets
+  'chapterMaterials.heading': 'अध्याय अध्ययन सामग्री व वीडियो व्याख्यान',
+  'chapterMaterials.bucket.notes': 'अध्याय नोट्स एवं व्युत्पत्तियाँ',
+  'chapterMaterials.bucket.textbooks': 'पाठ्यपुस्तकें व आधिकारिक पाठ्यक्रम',
+  'chapterMaterials.bucket.pyqs': 'पिछले वर्षों के प्रश्नपत्र',
+  'chapterMaterials.bucket.samples': 'सैंपल व मॉडल पेपर',
+  'chapterMaterials.bucket.formulas': 'सूत्र शीट',
+  'chapterMaterials.bucket.revision': 'पुनरीक्षण नोट्स',
+  'chapterMaterials.bucket.videos': 'वीडियो व्याख्यान',
+  'chapterMaterials.bucket.other': 'प्रायोगिक व सहायक मार्गदर्शिकाएँ',
+  'chapterMaterials.emptyTitle': 'इस विशिष्ट अध्याय से अभी कोई सामग्री नहीं जुड़ी है',
+  'chapterMaterials.emptyBody':
+    'विषय-स्तरीय संसाधनों के लिए पूर्ण पीडीएफ लाइब्रेरी या आधिकारिक पोर्टल देखें।',
+
+  // Dashboard Prompt 3 Section
+  'dashboard.recentMaterials.title': 'हाल ही में देखी गई अध्ययन सामग्री',
+  'dashboard.recentMaterials.emptyTitle': 'अभी कोई अध्ययन सामग्री नहीं खोली गई है',
+  'dashboard.recentMaterials.emptyBody':
+    'पीडीएफ पृष्ठ प्रगति और त्वरित रिज्यूमे लिंक यहाँ देखने के लिए लाइब्रेरी से कोई नोट्स या व्याख्यान खोलें।',
+  'dashboard.recentMaterials.browseLibrary': 'पीडीएफ लाइब्रेरी देखें',
+
+  // Dashboard Prompt 4 Section
+  'dashboard.assessments.title': 'अभ्यास, मॉक टेस्ट एवं प्रदर्शन विश्लेषण',
+  'dashboard.assessments.accuracy': 'अभ्यास सटीकता',
+  'dashboard.assessments.weakChapters': 'कमज़ोर अध्याय',
+  'dashboard.assessments.dailyQuizTitle': 'दैनिक अभ्यास क्विज़',
+  'dashboard.assessments.mockTestsTitle': 'CBT व बोर्ड सिम्युलेटर',
+  'dashboard.assessments.recentResults': 'हाल के टेस्ट परिणाम',
+  'dashboard.assessments.emptyResults': 'अभी कोई टेस्ट सबमिट नहीं हुआ है। वास्तविक स्कोर देखने के लिए क्विज़ या मॉक टेस्ट दें।',
+  'dashboard.assessments.emptyWeak': 'अभी कोई कमज़ोर अध्याय नहीं मिला — वास्तविक अभ्यास और टेस्ट सटीकता के आधार पर विश्लेषण स्वतः बनेगा।',
+  'bookmarks.sectionQuestions': 'सहेजे गए अभ्यास प्रश्न ({count})',
+
+  // Dashboard Prompt 5 AI Study Assistant Card
+  'dashboard.aiCard.title': 'PrepZone AI अध्ययन सहायक',
+  'dashboard.aiCard.subtitle':
+    'हिंदी, अंग्रेज़ी या हिंग्लिश में पाठ्यक्रम-आधारित संदेह पूछें, पृष्ठ-उद्धृत PDF उत्तर, अध्याय सारांश, AI क्विज़ और व्यक्तिगत अध्ययन योजना प्राप्त करें।',
+  'dashboard.aiCard.openWorkspace': 'AI कार्यक्षेत्र खोलें',
+  'dashboard.aiCard.askDoubt': 'संदेह पूछें',
+  'dashboard.aiCard.pdfTutor': 'PDF AI ट्यूटर',
+  'dashboard.aiCard.aiQuiz': 'AI क्विज़ बनाएँ',
+  'dashboard.aiCard.summary': 'अध्याय सारांश',
+  'dashboard.aiCard.studyPlan': 'अध्ययन योजना',
 };
 
 export const TRANSLATIONS: Record<LanguageCode, TranslationDict> = { en, hi };

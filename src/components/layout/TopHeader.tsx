@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, BookOpen, Globe, Menu, Moon, Search, Sun, User, X } from 'lucide-react';
+import { Bell, BookOpen, FileText, Globe, Menu, Moon, PlayCircle, Search, Sun, User, X } from 'lucide-react';
 import { PLATFORM_MODULES } from '../../config/modules';
 import { ALL_CURRICULUM_SUBJECTS } from '../../data/curriculum';
+import { STUDY_MATERIALS_CATALOG } from '../../data/materials/studyMaterialsCatalog';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { translate } from '../../i18n/translations';
 import { searchCurriculum } from '../../utils/curriculumSearch';
+import { DEFAULT_MATERIAL_FILTER_STATE, filterStudyMaterials } from '../../utils/materialsSearch';
 import { filterModulesByQuery, type SearchableModuleItem } from '../../utils/search';
 import { PrepZoneLogo } from '../brand/PrepZoneLogo';
 import { ModuleIcon } from '../common/ModuleIcon';
@@ -60,12 +62,31 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenMobileDrawer }) => {
   );
 
   const curriculumHits = useMemo(
-    () => (query.trim().length > 0 ? searchCurriculum(ALL_CURRICULUM_SUBJECTS, query, 6) : []),
+    () => (query.trim().length > 0 ? searchCurriculum(ALL_CURRICULUM_SUBJECTS, query, 5) : []),
     [query]
   );
 
+  const materialHits = useMemo(
+    () =>
+      query.trim().length > 0
+        ? filterStudyMaterials(
+            STUDY_MATERIALS_CATALOG,
+            { ...DEFAULT_MATERIAL_FILTER_STATE, query },
+            ALL_CURRICULUM_SUBJECTS
+          ).slice(0, 5)
+        : [],
+    [query]
+  );
+
+  const firstMaterialPath =
+    materialHits[0]?.materialType === 'video_lecture'
+      ? `/video-lectures/${materialHits[0].id}`
+      : materialHits[0]
+      ? `/pdf-library/view/${materialHits[0].id}`
+      : null;
+
   const firstResultPath =
-    filteredModules[0]?.module.path ?? curriculumHits[0]?.routePath ?? null;
+    filteredModules[0]?.module.path ?? curriculumHits[0]?.routePath ?? firstMaterialPath ?? null;
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -96,7 +117,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenMobileDrawer }) => {
       aria-label={t('header.searchLabel')}
       className="absolute left-0 right-0 top-12 z-40 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900"
     >
-      {filteredModules.length === 0 && curriculumHits.length === 0 ? (
+      {filteredModules.length === 0 && curriculumHits.length === 0 && materialHits.length === 0 ? (
         <p className="px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
           {t('header.searchNoResults')}
         </p>
@@ -163,6 +184,50 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenMobileDrawer }) => {
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {materialHits.length > 0 && (
+            <div>
+              <p className="px-3 py-1 text-[11px] font-semibold text-slate-400">
+                {t('header.searchCategoryMaterials')}
+              </p>
+              {materialHits.map((mat) => {
+                const route =
+                  mat.materialType === 'video_lecture'
+                    ? `/video-lectures/${mat.id}`
+                    : `/pdf-library/view/${mat.id}`;
+                return (
+                  <button
+                    key={mat.id}
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    onClick={() => handleSelectModule(route)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    {mat.materialType === 'video_lecture' ? (
+                      <PlayCircle
+                        className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <FileText
+                        className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-slate-900 dark:text-slate-100">
+                        {mat.title[language]}
+                      </span>
+                      <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                        {mat.examTrack.toUpperCase()} · {t(`materials.type.${mat.materialType}`)} · {mat.fileFormat}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

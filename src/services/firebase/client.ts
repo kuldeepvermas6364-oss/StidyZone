@@ -12,11 +12,12 @@ export interface FirebaseServiceReadiness {
 }
 
 export function isAppletFirebaseProvisioned(): boolean {
+  const cfg = firebaseConfig as any;
   return Boolean(
-    firebaseConfig?.projectId &&
-      firebaseConfig?.apiKey &&
-      firebaseConfig?.appId &&
-      firebaseConfig?.firestoreDatabaseId
+    cfg?.projectId &&
+      cfg?.apiKey &&
+      cfg?.appId &&
+      cfg?.firestoreDatabaseId
   );
 }
 
@@ -24,13 +25,14 @@ export function getFirebaseServiceReadiness(): FirebaseServiceReadiness {
   const appletReady = isAppletFirebaseProvisioned();
   const envReady = isFirebaseConfigured();
   const envCfg = getFirebasePublicConfig();
+  const cfg = firebaseConfig as any;
 
   return {
     configured: appletReady || envReady,
     source: appletReady ? 'applet-config' : envReady ? 'env' : 'none',
     missingEnvKeys: appletReady ? [] : getMissingFirebaseKeys(),
-    projectId: appletReady ? firebaseConfig.projectId : envCfg.projectId || null,
-    firestoreDatabaseId: appletReady ? firebaseConfig.firestoreDatabaseId : null,
+    projectId: appletReady ? cfg.projectId : envCfg.projectId || null,
+    firestoreDatabaseId: appletReady ? cfg.firestoreDatabaseId : null,
     servicesActive: appletReady ? ['auth', 'firestore'] : [],
     servicesPlanned: ['realtimeDatabase', 'storage'],
   };

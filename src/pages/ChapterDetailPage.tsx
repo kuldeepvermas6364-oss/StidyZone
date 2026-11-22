@@ -1,22 +1,30 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
+  Bookmark,
   Check,
   ClipboardCheck,
   FileText,
   Info,
   PlayCircle,
+  Sparkles,
 } from 'lucide-react';
+import { EmptyState } from '../components/common/EmptyState';
 import { GuestSaveBanner } from '../components/curriculum/GuestSaveBanner';
 import { VerificationNotice } from '../components/curriculum/VerificationNotice';
+import { MaterialCard } from '../components/materials/MaterialCard';
 import { getChapterById } from '../data/curriculum';
+import { QUESTION_PUBLIC_CATALOG } from '../data/assessments/questionBankCatalog';
+import { STUDY_MATERIALS_CATALOG } from '../data/materials/studyMaterialsCatalog';
 import { useApp } from '../contexts/AppContext';
+import { useMaterials } from '../contexts/MaterialsContext';
 import { useProgress } from '../contexts/ProgressContext';
 import type { ChapterProgressStatus, PracticeStatus } from '../types/curriculum';
 import type { ExamTrack } from '../types/database';
 import { getChapterProgress } from '../utils/curriculumProgress';
+import { groupChapterMaterials } from '../utils/materialsSearch';
 
 const TRACK_LABELS: Record<ExamTrack, string> = {
   'up-board-12': 'nav.upBoard12',
@@ -46,6 +54,8 @@ const ChapterDetailPage: React.FC = () => {
     setChapterPracticeStatus,
     toggleTopicCompletion,
   } = useProgress();
+  const { isBookmarked, toggleBookmark } = useMaterials();
+  const [chapterBmHint, setChapterBmHint] = useState(false);
 
   const validTrack =
     examTrack === 'up-board-12' || examTrack === 'jee-main' || examTrack === 'jee-advanced'
@@ -57,6 +67,19 @@ const ChapterDetailPage: React.FC = () => {
       ? getChapterById(validTrack, subjectId, chapterId)
       : undefined;
 
+  const buckets = useMemo(
+    () =>
+      validTrack && found
+        ? groupChapterMaterials(
+            STUDY_MATERIALS_CATALOG,
+            validTrack,
+            found.subject.id,
+            found.chapter.id
+          )
+        : null,
+    [validTrack, found]
+  );
+
   if (!validTrack || !found) {
     return <Navigate to="/up-board-class-12" replace />;
   }
@@ -64,6 +87,20 @@ const ChapterDetailPage: React.FC = () => {
   const { subject, chapter } = found;
   const prog = getChapterProgress(progressMap, validTrack, subject.id, chapter.id);
   const completedSet = new Set(prog.completedTopicIds);
+  const chapterSaved = isBookmarked('chapter', chapter.id);
+
+  const nonEmptySections = buckets
+    ? [
+        { key: 'notes', label: t('chapterMaterials.bucket.notes'), items: buckets.chapterNotes },
+        { key: 'formulas', label: t('chapterMaterials.bucket.formulas'), items: buckets.formulaSheets },
+        { key: 'revision', label: t('chapterMaterials.bucket.revision'), items: buckets.revisionNotes },
+        { key: 'textbooks', label: t('chapterMaterials.bucket.textbooks'), items: buckets.textbooks },
+        { key: 'pyqs', label: t('chapterMaterials.bucket.pyqs'), items: buckets.previousYearPapers },
+        { key: 'samples', label: t('chapterMaterials.bucket.samples'), items: buckets.sampleAndModelQuestions },
+        { key: 'videos', label: t('chapterMaterials.bucket.videos'), items: buckets.videoLectures },
+        { key: 'other', label: t('chapterMaterials.bucket.other'), items: buckets.otherResources },
+      ].filter((sec) => sec.items.length > 0)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -91,9 +128,42 @@ const ChapterDetailPage: React.FC = () => {
               {subject.name[language]} · Unit {chapter.unitNumber} · ~{chapter.estimatedHours}h
               {chapter.weightageLabel ? ` · ${chapter.weightageLabel[language]}` : ''}
             </p>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {chapter.order}. {chapter.title[language]}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {chapter.order}. {chapter.title[language]}
+              </h1>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await toggleBookmark({
+                    itemType: 'chapter',
+                    itemId: chapter.id,
+                    examTrack: validTrack,
+                  });
+                  setChapterBmHint(Boolean(res.requiresAuth));
+                }}
+                aria-pressed={chapterSaved}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
+                  chapterSaved
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                <Bookmark className={`h-3.5 w-3.5 ${chapterSaved ? 'fill-current' : ''}`} aria-hidden="true" />
+                <span>
+                  {chapterSaved
+                    ? t('materials.action.savedBookmark')
+                    : t('materials.action.saveBookmark')}
+                </span>
+              </button>
+            </div>
+            {chapterBmHint && (
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                <Link to="/login" className="underline">
+                  {t('materials.action.signInToBookmark')}
+                </Link>
+              </p>
+            )}
             <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {chapter.overview[language]}
             </p>
@@ -254,20 +324,26 @@ const ChapterDetailPage: React.FC = () => {
         </ul>
       </section>
 
-      {/* Prompt 3 Study Material & Prompt 4 Practice Placeholders */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      {/* Real Connected Study Materials & Video Lectures (Prompt 3) */}
+      <section
+        aria-labelledby="chapter-materials-heading"
+        className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-base font-bold text-slate-900 dark:text-white">
-              {t('syllabus.studyMaterialsTitle')}
+            <h2
+              id="chapter-materials-heading"
+              className="font-display text-base font-bold text-slate-900 dark:text-white"
+            >
+              {t('chapterMaterials.heading')}
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               {t('syllabus.studyMaterialsDesc')}
             </p>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
-              to="/pdf-library"
+              to={`/pdf-library?exam=${validTrack}&subject=${subject.id}`}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
@@ -281,29 +357,94 @@ const ChapterDetailPage: React.FC = () => {
               <span>{t('syllabus.openVideoLectures')}</span>
             </Link>
           </div>
-        </section>
+        </div>
 
-        <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <h2 className="font-display text-base font-bold text-slate-900 dark:text-white">
-              {t('syllabus.practiceSectionTitle')}
-            </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-              {t('syllabus.practiceSectionDesc')}
-            </p>
+        {nonEmptySections.length > 0 ? (
+          <div className="space-y-5">
+            {nonEmptySections.map((sec) => (
+              <div key={sec.key} className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {sec.label} ({sec.items.length})
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {sec.items.map((mat) => (
+                    <MaterialCard key={mat.id} material={mat} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="mt-4">
-            <Link
-              to="/practice-tests"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <ClipboardCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-              <span>{t('syllabus.openPracticeTests')}</span>
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          </div>
-        </section>
-      </div>
+        ) : (
+          <EmptyState
+            icon={<FileText className="h-5 w-5" aria-hidden="true" />}
+            title={t('chapterMaterials.emptyTitle')}
+            body={t('chapterMaterials.emptyBody')}
+            actionLabel={t('syllabus.openPdfLibrary')}
+            actionTo={`/pdf-library?exam=${validTrack}&subject=${subject.id}`}
+          />
+        )}
+      </section>
+
+      {/* Prompt 4 Chapter Practice, Question Bank & Chapter Quiz Actions */}
+      <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div>
+          <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+            {
+              QUESTION_PUBLIC_CATALOG.filter(
+                (q) => q.examTrack === validTrack && q.subjectId === subject.id && q.chapterId === chapter.id
+              ).length
+            }{' '}
+            {language === 'hi' ? 'प्रश्न इस अध्याय में मैप किए गए हैं' : 'mapped chapter question(s)'}
+          </p>
+          <h2 className="mt-1 font-display text-base font-bold text-slate-900 dark:text-white">
+            {t('syllabus.practiceSectionTitle')}
+          </h2>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            {t('syllabus.practiceSectionDesc')}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          <Link
+            to={`/practice?exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{language === 'hi' ? 'अध्याय अभ्यास शुरू करें' : 'Practice Chapter Questions'}</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+          <Link
+            to={`/quiz?exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <span>{language === 'hi' ? 'अध्याय क्विज़ बनाएँ' : 'Chapter Quiz Builder'}</span>
+          </Link>
+          <Link
+            to={`/question-bank?exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <span>{language === 'hi' ? 'प्रश्न बैंक में देखें' : 'Browse Questions'}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=chat&exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{language === 'hi' ? 'AI ट्यूटर से पूछें' : 'Ask AI Tutor'}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=summary&exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <span>{language === 'hi' ? 'अध्याय सारांश (AI)' : 'AI Chapter Summary'}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=quiz&exam=${validTrack}&subject=${subject.id}&chapter=${chapter.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <span>{language === 'hi' ? 'AI क्विज़ बनाएँ' : 'Generate AI Quiz'}</span>
+          </Link>
+        </div>
+      </section>
 
       <VerificationNotice verification={subject.verification} />
     </div>

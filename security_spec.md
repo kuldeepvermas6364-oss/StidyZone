@@ -27,3 +27,24 @@
 - State Shortcutting & Shadow Fields: Blocked via `isValid[Entity](incoming())` + `hasAll`/`hasOnly` on create + `affectedKeys().hasOnly(...)` on update.
 - Resource Poisoning: Blocked via `isValidId()` regex (`^[a-zA-Z0-9_-]+$`, `<= 128` chars) and explicit `.size()` bounds on all strings.
 - Query Trust: All user-owned `allow list` rules explicitly validate `resource.data.uid == request.auth.uid` without `get()`/`exists()` inside list rules.
+
+## 4. Prompt 4 Assessment Engine Invariants
+7. `questionAnswerKeys/{questionId}` is **strictly admin-only** (`allow read, write: if isAdmin()`); students reading `questionBank` never receive `correctAnswer`, `solutionSteps`, or `explanation` from Firestore prior to submission.
+8. All `quizAttempts`, `examAttempts`, `studentAnswers`, `questionBookmarks`, `practiceHistory`, `performanceAnalytics`, and `weakTopics` enforce `uid == request.auth.uid` on read, query (`allow list`), create, and update.
+9. Once an attempt reaches `status == "submitted"`, students cannot mutate scores, `status`, `startedAt`, or answers (`existing().status == 'in_progress'` enforced on student attempt updates).
+10. `questionSets`, `examConfigurations`, `questionBank`, `quizzes`, and `mockTests` are admin-managed (`isAdmin()` write; `isPublished == true` read).
+
+## 5. Prompt 5 AI Study Assistant & RAG Security Invariants
+11. `aiConversations`, `aiMessages`, `aiFeedback`, `generatedQuizzes`, `studyRecommendations`, and `aiStudyPlans` strictly enforce `uid == request.auth.uid` on `get`, `list` (`resource.data.uid == request.auth.uid`), `create`, `update`, and `delete`, with immutable `uid`/`createdAt` fields and strict `request.time` server timestamps.
+12. `aiUsage/{usageId}` prevents client quota tampering (`allow create, update, delete: if isAdmin()`), while allowing only the owning student or admin to read their usage counters.
+13. `documentChunks`, `documentEmbeddings`, and `generatedSummaries` restrict writes to verified admins/server pipelines (`isAdmin()`), preventing students from injecting unverified RAG chunks or poisoned summaries into shared collections.
+14. `generatedQuizzes` requires `sourceType == 'ai_generated'` on client creation so AI-generated items can never masquerade as `'verified_pyq'`.
+
+## 6. Prompt 6 Admin Panel, Super Admin & Bulk Upload Security Invariants
+15. **Super Admin Exclusivity**: Only `isSuperAdmin()` (`did78994@gmail.com` verified email OR active `super_admin` document in `/adminRoles` or `/admins`) may write `/admins/{adminId}`, `/adminRoles/{adminId}`, `/adminPermissions/{adminId}`, `/systemSettings/{settingId}`, or suspend/modify admin accounts. Content Admins (`content_admin` / `educator` / `moderator`) are explicitly **denied** role/system-setting mutations to block privilege escalation.
+16. **Append-Only Audit Trail**: `/adminAuditLogs/{logId}` permits `create` by verified admins (`adminUid == request.auth.uid && createdAt == request.time`), permits `get`/`list` by `isSuperAdmin()` (or own logs for Content Admin), and enforces `allow update, delete: if false;` so audit trails can never be altered or erased.
+17. **Student Isolation from Admin Panel**: Public student registrations always set `role: 'student'`; normal students are rejected (`PERMISSION_DENIED` in Firestore, HTTP `403` on `/api/admin/*`) from admin dashboards, upload jobs, integration diagnostics, AI settings, and student registries.
+18. **Secret & Key Confidentiality**: Raw `GEMINI_API_KEY`, OAuth client secrets, `STORAGE_SIGNING_SECRET`, and student password hashes are never returned in `/api/admin/*`, `/admin/integrations`, `/admin/ai-management`, or `/admin/students` responses/exports.
+19. **AI Preview & Pre-Test Answer Key Guard**: Bulk PDF auto-categorization creates `preview` jobs requiring explicit admin edit/confirm before publishing, AI-generated questions cannot be marked `verified_pyq`, and student endpoints never leak mock test answer keys prior to submission.
+
+

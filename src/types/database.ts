@@ -209,4 +209,5 @@ export type CollectionName =
   | 'mockTests'
   | 'bookmarks'
   | 'studyProgress'
+  | 'readingHistory'
   | 'adminRoles';

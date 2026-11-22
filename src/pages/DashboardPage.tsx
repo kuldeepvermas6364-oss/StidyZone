@@ -13,13 +13,18 @@ import {
   History,
   Minus,
   Plus,
+  Sparkles,
   Target,
   TrendingUp,
 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useAssessments } from '../contexts/AssessmentContext';
+import { useMaterials } from '../contexts/MaterialsContext';
 import { useProgress } from '../contexts/ProgressContext';
 import { getStreamDefinition, getSubjectsForExam } from '../data/curriculum';
+import { getMaterialById } from '../data/materials/studyMaterialsCatalog';
 import type { ExamTrack } from '../types/database';
 import { calculateExamCountdown } from '../utils/countdown';
 import {
@@ -43,6 +48,9 @@ const DashboardPage: React.FC = () => {
   } = useApp();
   const { isAuthenticated, session } = useAuth();
   const { progressMap, selectedStream, selectedSubjects } = useProgress();
+  const { readingHistory, clearReadingHistory } = useMaterials();
+  const { analytics, attempts, examConfigurations, quizzes, totalQuestionCount } = useAssessments();
+  const submittedTests = attempts.filter((a) => a.status === 'submitted');
   const [imgError, setImgError] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -658,6 +666,275 @@ const DashboardPage: React.FC = () => {
           )}
         </section>
       </div>
+
+      {/* 5b. Recently Viewed Study Materials (Prompt 3) */}
+      <section
+        aria-labelledby="recent-materials-heading"
+        className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2
+            id="recent-materials-heading"
+            className="font-display text-base font-bold text-slate-900 dark:text-white"
+          >
+            {t('dashboard.recentMaterials.title')}
+          </h2>
+          {readingHistory.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void clearReadingHistory()}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{t('materials.library.clearHistory')}</span>
+            </button>
+          )}
+        </div>
+
+        {readingHistory.length > 0 ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {readingHistory.slice(0, 4).map((entry) => {
+              const mat = getMaterialById(entry.materialId);
+              if (!mat) return null;
+              const targetRoute =
+                mat.materialType === 'video_lecture'
+                  ? `/video-lectures/${mat.id}`
+                  : `/pdf-library/view/${mat.id}`;
+              return (
+                <Link
+                  key={entry.id}
+                  to={targetRoute}
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 transition-colors hover:border-blue-300 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-700"
+                >
+                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
+                    {mat.title[language]}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                    {entry.totalPages
+                      ? t('materials.library.pageProgress', {
+                          page: entry.lastViewedPage,
+                          total: entry.totalPages,
+                        })
+                      : t(`materials.type.${mat.materialType}`)}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-2">
+            <EmptyState
+              icon={<FileText className="h-5 w-5" aria-hidden="true" />}
+              title={t('dashboard.recentMaterials.emptyTitle')}
+              body={t('dashboard.recentMaterials.emptyBody')}
+              actionLabel={t('dashboard.recentMaterials.browseLibrary')}
+              actionTo="/pdf-library"
+            />
+          </div>
+        )}
+      </section>
+
+      {/* 5c. Practice, Quizzes & Exam Simulator Analytics (Prompt 4) */}
+      <section
+        aria-labelledby="dashboard-assessments-heading"
+        className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2
+              id="dashboard-assessments-heading"
+              className="font-display text-base font-bold text-slate-900 dark:text-white"
+            >
+              {t('dashboard.assessments.title')}
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {totalQuestionCount} questions · {quizzes.length} quizzes · {examConfigurations.length} mock formats
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/practice"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <span>{t('dashboard.assessments.dailyQuizTitle')}</span>
+            </Link>
+            <Link
+              to="/exam-simulator"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{t('dashboard.assessments.mockTestsTitle')}</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Practice Accuracy & Weak Chapters */}
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:col-span-6 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {t('dashboard.assessments.accuracy')}
+                </p>
+                <p className="mt-0.5 font-mono text-2xl font-bold text-blue-600 tabular-nums dark:text-blue-400">
+                  {analytics.overallAccuracyPercent}%
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {t('dashboard.assessments.weakChapters')}
+                </p>
+                <p className="mt-0.5 font-mono text-2xl font-bold text-slate-900 tabular-nums dark:text-white">
+                  {analytics.weakChapters.length}
+                </p>
+              </div>
+            </div>
+
+            {analytics.weakChapters.length > 0 ? (
+              <div className="space-y-2">
+                {analytics.weakChapters.slice(0, 3).map((wc) => (
+                  <div
+                    key={`${wc.subjectId}-${wc.chapterId}`}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="truncate font-semibold text-slate-800 dark:text-slate-200">
+                      {wc.subjectId} · {wc.chapterId} ({wc.accuracyPercent}%)
+                    </span>
+                    <Link
+                      to={`/practice?subject=${wc.subjectId}&chapter=${wc.chapterId}`}
+                      className="font-semibold text-blue-600 hover:underline shrink-0 dark:text-blue-400"
+                    >
+                      Practice
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {t('dashboard.assessments.emptyWeak')}
+              </p>
+            )}
+          </div>
+
+          {/* Recent Test Results */}
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:col-span-6 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white">
+                {t('dashboard.assessments.recentResults')}
+              </h3>
+              <Link
+                to="/practice-tests"
+                className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Open Hub
+              </Link>
+            </div>
+
+            {submittedTests.length > 0 ? (
+              <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                {submittedTests.slice(0, 3).map((att) => (
+                  <li key={att.id} className="py-2 first:pt-0 last:pb-0">
+                    <Link
+                      to={`/exam-results/${att.id}`}
+                      className="flex items-center justify-between gap-3 text-xs group"
+                    >
+                      <span className="truncate font-semibold text-slate-800 group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400">
+                        {att.title[language]}
+                      </span>
+                      <span className="font-mono font-bold text-blue-600 tabular-nums shrink-0 dark:text-blue-400">
+                        {att.result ? `${att.result.score}/${att.result.maxMarks}` : '--'}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {t('dashboard.assessments.emptyResults')}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5d. PrepZone AI Study Assistant Quick-Action Card (Prompt 5) */}
+      <section
+        aria-labelledby="dashboard-ai-assistant-heading"
+        className="rounded-2xl border border-blue-200 bg-linear-to-br from-blue-50/60 via-white to-white p-6 space-y-4 dark:border-blue-900/60 dark:from-blue-950/30 dark:via-slate-900 dark:to-slate-900"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+              <Sparkles className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2
+                id="dashboard-ai-assistant-heading"
+                className="font-display text-base font-bold text-slate-900 dark:text-white"
+              >
+                {t('dashboard.aiCard.title')}
+              </h2>
+              <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                {t('dashboard.aiCard.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to={`/ai-assistant?exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors whitespace-nowrap shrink-0"
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{t('dashboard.aiCard.openWorkspace')}</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to={`/ai-assistant?tab=chat&exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/40 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-blue-600"
+          >
+            <span>{t('dashboard.aiCard.askDoubt')}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=pdf&exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/40 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-blue-600"
+          >
+            <span>{t('dashboard.aiCard.pdfTutor')}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=quiz&exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/40 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-blue-600"
+          >
+            <span>{t('dashboard.aiCard.aiQuiz')}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=summary&exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/40 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-blue-600"
+          >
+            <span>{t('dashboard.aiCard.summary')}</span>
+          </Link>
+          <Link
+            to={`/ai-assistant?tab=plan&exam=${primaryExam}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:border-blue-300 hover:bg-blue-50/40 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-blue-600"
+          >
+            <span>{t('dashboard.aiCard.studyPlan')}</span>
+          </Link>
+          {analytics.weakChapters.length > 0 && (
+            <Link
+              to={`/ai-assistant?tab=chat&exam=${primaryExam}&subject=${analytics.weakChapters[0].subjectId}&chapter=${analytics.weakChapters[0].chapterId}`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+            >
+              <span>
+                {language === 'hi'
+                  ? `कमज़ोर अध्याय दोहराएँ (${analytics.weakChapters[0].accuracyPercent}%)`
+                  : `Revise Weak Chapter (${analytics.weakChapters[0].accuracyPercent}%)`}
+              </span>
+            </Link>
+          )}
+        </div>
+      </section>
 
       {/* 6. Quick Access Trio */}
       <section aria-labelledby="quick-access-heading" className="space-y-4">

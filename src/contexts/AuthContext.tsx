@@ -24,6 +24,10 @@ import {
   type LoginInput,
   type RegisterInput,
 } from '../services/auth/authService';
+import {
+  clearServerSessionToken,
+  ensureFoundationServerToken,
+} from '../services/auth/serverAuthToken';
 import type { StudentProfileRecord, UserRecord } from '../types/database';
 
 interface AuthContextValue {
@@ -247,15 +251,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  useEffect(() => {
+    if (session?.mode === 'local-foundation') {
+      void ensureFoundationServerToken(session.user.uid, session.user.email);
+    } else if (!session) {
+      clearServerSessionToken();
+    }
+  }, [session]);
+
   const signIn = useCallback((input: LoginInput) => {
     const next = signInStudentWithEmail(input);
     setSession(next);
+    if (next.mode === 'local-foundation') {
+      void ensureFoundationServerToken(next.user.uid, next.user.email);
+    }
     return next;
   }, []);
 
   const register = useCallback((input: RegisterInput) => {
     const next = registerStudentAccount(input);
     setSession(next);
+    if (next.mode === 'local-foundation') {
+      void ensureFoundationServerToken(next.user.uid, next.user.email);
+    }
     return next;
   }, []);
 
@@ -336,6 +354,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const signOut = useCallback(async () => {
+    clearServerSessionToken();
     signOutStudent();
     if (auth.currentUser) {
       await firebaseSignOut(auth);

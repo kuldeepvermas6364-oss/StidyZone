@@ -3,18 +3,20 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+const cfg = firebaseConfig as any;
 
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const app = initializeApp(cfg);
+
+export const db = getFirestore(app, cfg.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 export const FIREBASE_APPLET_INFO = {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId,
-  storageBucket: firebaseConfig.storageBucket,
+  projectId: cfg.projectId,
+  authDomain: cfg.authDomain,
+  firestoreDatabaseId: cfg.firestoreDatabaseId,
+  storageBucket: cfg.storageBucket,
 };
 
 export enum OperationType {

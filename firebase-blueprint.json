@@ -93,22 +93,58 @@
     },
     "StudyMaterial": {
       "title": "StudyMaterial",
-      "description": "PDF notes, NCERT books, PYQs, and video lecture metadata.",
+      "description": "PDF notes, NCERT books, PYQs, model papers, official portals, and authorized video lecture metadata.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "academicSession": { "type": "string", "maxLength": 32 },
+        "classLevel": { "type": "string", "enum": ["class-12", "entrance-ug"] },
+        "streamId": { "type": "string", "enum": ["science", "commerce", "arts"] },
         "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "chapterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
-        "kind": { "type": "string", "enum": ["pdf_notes", "ncert_book", "pyq_paper", "formula_sheet", "video_lecture"] },
+        "topicId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "materialType": {
+          "type": "string",
+          "enum": [
+            "ncert_book",
+            "chapter_notes",
+            "class_notes",
+            "revision_notes",
+            "important_questions",
+            "pyq_paper",
+            "sample_paper",
+            "model_paper",
+            "formula_sheet",
+            "derivations",
+            "practical_guide",
+            "official_syllabus",
+            "video_lecture"
+          ]
+        },
         "title": { "type": "object" },
+        "description": { "type": "object" },
         "language": { "type": "string", "enum": ["en", "hi", "bilingual"] },
+        "fileFormat": { "type": "string", "enum": ["PDF", "VIDEO", "WEB_PORTAL"] },
+        "fileSizeBytes": { "type": "number" },
+        "pageCount": { "type": "number" },
+        "durationSeconds": { "type": "number" },
+        "storageProvider": { "type": "string", "enum": ["local-signed-storage", "firebase-storage", "external-official"] },
         "storagePath": { "type": "string", "maxLength": 500 },
+        "externalSourceUrl": { "type": "string", "maxLength": 500 },
+        "distributionType": { "type": "string", "enum": ["authorized_pdf", "protected_pdf", "official_external_link", "authorized_video"] },
+        "accessLevel": { "type": "string", "enum": ["public", "authenticated"] },
+        "downloadAllowed": { "type": "boolean" },
+        "visibility": { "type": "string", "enum": ["public", "authenticated", "restricted"] },
+        "publicationStatus": { "type": "string", "enum": ["published", "draft", "archived"] },
+        "isOfficial": { "type": "boolean" },
+        "verificationStatus": { "type": "string", "enum": ["verified", "awaiting_verification"] },
         "isPublished": { "type": "boolean" },
         "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "createdByUid": { "type": "string", "maxLength": 128 }
       },
-      "required": ["id", "examTrack", "subjectId", "chapterId", "kind", "title", "language", "storagePath", "isPublished", "publishedAt", "createdByUid"]
+      "required": ["id", "examTrack", "subjectId", "materialType", "title", "language", "storageProvider", "distributionType", "accessLevel", "isPublished", "publishedAt", "createdByUid"]
     },
     "Question": {
       "title": "Question",
@@ -195,18 +231,394 @@
       },
       "required": ["id", "uid", "examTrack", "subjectId", "chapterId", "status", "studyMinutesLogged", "completionPercent", "lastActivityAt"]
     },
+    "ReadingHistory": {
+      "title": "ReadingHistory",
+      "description": "Student-owned reading history and last viewed PDF page progress.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "materialId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "chapterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "materialType": { "type": "string", "maxLength": 40 },
+        "lastViewedPage": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "lastAccessedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "materialId", "examTrack", "subjectId", "materialType", "lastViewedPage", "lastAccessedAt"]
+    },
     "AdminRole": {
       "title": "AdminRole",
-      "description": "Server/super-admin managed educator and moderator role assignments.",
+      "description": "Super-admin managed Super Admin and Content Admin role assignments.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
-        "role": { "type": "string", "enum": ["educator", "moderator", "super_admin"] },
+        "role": { "type": "string", "enum": ["super_admin", "content_admin", "educator", "moderator"] },
         "active": { "type": "boolean" },
         "grantedByUid": { "type": "string", "maxLength": 128 },
         "grantedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "role", "active", "grantedByUid", "grantedAt"]
+    },
+    "AdminPermission": {
+      "title": "AdminPermission",
+      "description": "Granular module permissions assigned by Super Admin to a Content Admin.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "permissions", "updatedByUid", "updatedAt"]
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Immutable append-only security and content audit trail.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "adminUid": { "type": "string", "maxLength": 128 },
+        "adminEmail": { "type": "string", "maxLength": 254 },
+        "adminRole": { "type": "string", "maxLength": 40 },
+        "action": { "type": "string", "maxLength": 80 },
+        "targetType": { "type": "string", "maxLength": 60 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["success", "failure", "denied"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "adminUid", "adminEmail", "adminRole", "action", "targetType", "status", "createdAt"]
+    },
+    "UploadJob": {
+      "title": "UploadJob",
+      "description": "Tracked bulk PDF and ZIP ingestion job with per-file diagnostics.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "adminUid": { "type": "string", "maxLength": 128 },
+        "fileCount": { "type": "number" },
+        "successCount": { "type": "number" },
+        "failedCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["preview", "completed", "partial", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "adminUid", "fileCount", "successCount", "failedCount", "status", "createdAt", "updatedAt"]
+    },
+    "AiSettings": {
+      "title": "AiSettings",
+      "description": "Server-enforced Gemini AI model, quota, rate-limit, and feature toggle config.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "enabled": { "type": "boolean" },
+        "model": { "type": "string", "maxLength": 80 },
+        "dailyRequestLimit": { "type": "number" },
+        "dailyTokenLimit": { "type": "number" },
+        "rateLimitPerMin": { "type": "number" },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "enabled", "model", "dailyRequestLimit", "dailyTokenLimit", "rateLimitPerMin", "updatedByUid", "updatedAt"]
+    },
+    "SystemSettings": {
+      "title": "SystemSettings",
+      "description": "Super-admin controlled platform maintenance, registration, and security defaults.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "siteTitle": { "type": "string", "maxLength": 120 },
+        "maintenanceMode": { "type": "boolean" },
+        "allowNewRegistrations": { "type": "boolean" },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "siteTitle", "maintenanceMode", "allowNewRegistrations", "updatedByUid", "updatedAt"]
+    },
+    "AdminIntegrationStatus": {
+      "title": "AdminIntegrationStatus",
+      "description": "Admin-audited verification state for Google and Firebase integrations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "integrationId": { "type": "string", "maxLength": 80 },
+        "status": { "type": "string", "enum": ["connected", "setup_required", "unavailable"] },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "updatedByUid": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "integrationId", "status", "verifiedAt", "updatedByUid"]
+    },
+    "QuestionBankItem": {
+      "title": "QuestionBankItem",
+      "description": "Public bilingual question metadata across 11 question formats (without unreleased answer keys).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "questionType": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "prompt": { "type": "object" },
+        "marks": { "type": "number" },
+        "negativeMarks": { "type": "number" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examTrack", "subjectId", "chapterId", "questionType", "difficulty", "prompt", "marks", "negativeMarks", "isPublished"]
+    },
+    "QuestionAnswerKeyRecord": {
+      "title": "QuestionAnswerKeyRecord",
+      "description": "Server/Admin isolated answer keys and step-by-step solutions.",
+      "type": "object",
+      "properties": {
+        "questionId": { "type": "string", "maxLength": 128 },
+        "explanation": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["questionId", "explanation", "updatedAt"]
+    },
+    "QuestionSet": {
+      "title": "QuestionSet",
+      "description": "Curated collection of questions for daily practice or revision sets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "title": { "type": "object" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examTrack", "title", "isPublished"]
+    },
+    "ExamConfiguration": {
+      "title": "ExamConfiguration",
+      "description": "Configurable CBT and UP Board exam pattern blueprint.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "title": { "type": "object" },
+        "durationMinutes": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examTrack", "title", "durationMinutes", "totalMarks", "isPublished"]
+    },
+    "AssessmentAttempt": {
+      "title": "AssessmentAttempt",
+      "description": "Student-owned timed quiz or mock exam session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "configId": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "status": { "type": "string", "enum": ["in_progress", "submitted"] },
+        "startedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "configId", "examTrack", "status", "startedAt"]
+    },
+    "StudentAnswerRecord": {
+      "title": "StudentAnswerRecord",
+      "description": "Student answer entry bound to an active attempt.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "attemptId": { "type": "string", "maxLength": 128 },
+        "questionId": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "attemptId", "questionId", "updatedAt"]
+    },
+    "QuestionBookmarkRecord": {
+      "title": "QuestionBookmarkRecord",
+      "description": "Student bookmarked, difficult, or revision-flagged question.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "questionId": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "tag": { "type": "string", "enum": ["bookmark", "difficult", "revision"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "questionId", "examTrack", "tag", "createdAt"]
+    },
+    "PracticeHistoryRecord": {
+      "title": "PracticeHistoryRecord",
+      "description": "Student practice mode question attempt log (isolated from mock tests).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "questionId": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "isCorrect": { "type": "boolean" },
+        "attemptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "questionId", "examTrack", "isCorrect", "attemptedAt"]
+    },
+    "PerformanceAnalyticsRecord": {
+      "title": "PerformanceAnalyticsRecord",
+      "description": "Derived student accuracy and score summary across real attempts.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "overallAccuracyPercent": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "overallAccuracyPercent", "updatedAt"]
+    },
+    "WeakTopicRecord": {
+      "title": "WeakTopicRecord",
+      "description": "Detected weak topic or revision queue entry for a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "accuracyPercent": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "topicId", "accuracyPercent", "updatedAt"]
+    },
+    "AiConversation": {
+      "title": "AiConversation",
+      "description": "Owner-isolated AI Study Assistant conversation metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 120 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "languageMode": { "type": "string", "enum": ["en", "hi", "hinglish"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "title", "examTrack", "languageMode", "createdAt", "updatedAt"]
+    },
+    "AiMessage": {
+      "title": "AiMessage",
+      "description": "Owner-isolated user/assistant message inside an AI conversation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "conversationId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "maxLength": 20000 },
+        "feedback": { "type": "string", "enum": ["helpful", "needs_review"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "conversationId", "uid", "role", "content", "createdAt"]
+    },
+    "AiFeedback": {
+      "title": "AiFeedback",
+      "description": "Student helpfulness / review flags on AI responses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "maxLength": 128 },
+        "messageId": { "type": "string", "maxLength": 128 },
+        "rating": { "type": "string", "enum": ["helpful", "needs_review"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "messageId", "rating", "createdAt"]
+    },
+    "AiUsageRecord": {
+      "title": "AiUsageRecord",
+      "description": "Server-managed daily AI quota and token consumption counters per user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "dateKey": { "type": "string", "maxLength": 16 },
+        "requestsUsed": { "type": "number" },
+        "tokensUsed": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "dateKey", "requestsUsed", "tokensUsed", "updatedAt"]
+    },
+    "DocumentChunk": {
+      "title": "DocumentChunk",
+      "description": "Page-numbered extracted PDF text chunk for RAG grounding.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "materialId": { "type": "string", "maxLength": 128 },
+        "pageNumber": { "type": "number" },
+        "text": { "type": "string", "maxLength": 4000 }
+      },
+      "required": ["id", "materialId", "pageNumber", "text"]
+    },
+    "DocumentEmbedding": {
+      "title": "DocumentEmbedding",
+      "description": "Normalized retrieval vector metadata linked to DocumentChunk.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "materialId": { "type": "string", "maxLength": 128 },
+        "chunkId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "materialId", "chunkId"]
+    },
+    "GeneratedQuiz": {
+      "title": "GeneratedQuiz",
+      "description": "Student-confirmed AI-generated practice quiz saved separately from verified PYQs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "sourceType": { "type": "string", "enum": ["ai_generated"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "examTrack", "subjectId", "chapterId", "sourceType", "createdAt"]
+    },
+    "GeneratedSummary": {
+      "title": "GeneratedSummary",
+      "description": "Cached bilingual chapter summaries and formula sheets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "summaryMode": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "examTrack", "chapterId", "summaryMode", "createdAt"]
+    },
+    "StudyRecommendationRecord": {
+      "title": "StudyRecommendationRecord",
+      "description": "Owner-isolated personalized chapter & topic recommendation derived from real logs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "examTrack", "priority", "updatedAt"]
+    },
+    "AiStudyPlanRecord": {
+      "title": "AiStudyPlanRecord",
+      "description": "Owner-isolated student-reviewed personal study schedule.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "examTrack": { "type": "string", "enum": ["up-board-12", "jee-main", "jee-advanced"] },
+        "status": { "type": "string", "enum": ["draft", "approved"] },
+        "dailyHours": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "examTrack", "status", "dailyHours", "updatedAt"]
     }
   },
   "firestore": {
@@ -248,15 +660,59 @@
     },
     "/questions/{questionId}": {
       "schema": { "$ref": "#/entities/Question" },
-      "description": "Question bank for practice quizzes and mock tests."
+      "description": "Legacy question metadata."
+    },
+    "/questionBank/{questionId}": {
+      "schema": { "$ref": "#/entities/QuestionBankItem" },
+      "description": "Bilingual public Question Bank metadata across all 11 formats."
+    },
+    "/questionAnswerKeys/{questionId}": {
+      "schema": { "$ref": "#/entities/QuestionAnswerKeyRecord" },
+      "description": "Admin-only answer keys and step-by-step solutions."
+    },
+    "/questionSets/{setId}": {
+      "schema": { "$ref": "#/entities/QuestionSet" },
+      "description": "Curated practice question sets."
     },
     "/quizzes/{quizId}": {
       "schema": { "$ref": "#/entities/Quiz" },
-      "description": "Chapter-level practice quizzes."
+      "description": "Chapter-level and daily practice quizzes."
+    },
+    "/quizAttempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/AssessmentAttempt" },
+      "description": "Student-owned quiz attempts and autosave state."
     },
     "/mockTests/{mockTestId}": {
       "schema": { "$ref": "#/entities/MockTest" },
       "description": "Full-length mock tests."
+    },
+    "/examConfigurations/{configId}": {
+      "schema": { "$ref": "#/entities/ExamConfiguration" },
+      "description": "Configurable CBT and UP Board exam pattern templates."
+    },
+    "/examAttempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/AssessmentAttempt" },
+      "description": "Student-owned CBT & UP Board exam attempts."
+    },
+    "/studentAnswers/{answerId}": {
+      "schema": { "$ref": "#/entities/StudentAnswerRecord" },
+      "description": "Per-question student response drafts and submissions."
+    },
+    "/questionBookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/QuestionBookmarkRecord" },
+      "description": "User-scoped question bookmarks, difficult & revision tags."
+    },
+    "/practiceHistory/{entryId}": {
+      "schema": { "$ref": "#/entities/PracticeHistoryRecord" },
+      "description": "User-scoped practice mode attempts (separate from mock tests)."
+    },
+    "/performanceAnalytics/{userId}": {
+      "schema": { "$ref": "#/entities/PerformanceAnalyticsRecord" },
+      "description": "Owner-isolated student test accuracy & score analytics."
+    },
+    "/weakTopics/{topicEntryId}": {
+      "schema": { "$ref": "#/entities/WeakTopicRecord" },
+      "description": "Owner-isolated detected weak topics and revision queue."
     },
     "/bookmarks/{bookmarkId}": {
       "schema": { "$ref": "#/entities/Bookmark" },
@@ -266,9 +722,81 @@
       "schema": { "$ref": "#/entities/StudyProgress" },
       "description": "User-scoped chapter study progress."
     },
+    "/readingHistory/{entryId}": {
+      "schema": { "$ref": "#/entities/ReadingHistory" },
+      "description": "User-scoped study material reading history and PDF page progress."
+    },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminRole" },
       "description": "Admin/educator role documents used by security rules."
+    },
+    "/aiConversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/AiConversation" },
+      "description": "Owner-isolated AI tutor conversations."
+    },
+    "/aiMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/AiMessage" },
+      "description": "Owner-isolated AI chat messages linked to conversations."
+    },
+    "/aiFeedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/AiFeedback" },
+      "description": "User feedback logs for AI quality review."
+    },
+    "/aiUsage/{usageId}": {
+      "schema": { "$ref": "#/entities/AiUsageRecord" },
+      "description": "Server-managed daily token & request quota counters."
+    },
+    "/documentChunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/DocumentChunk" },
+      "description": "Admin/server-indexed page-numbered PDF text chunks."
+    },
+    "/documentEmbeddings/{embeddingId}": {
+      "schema": { "$ref": "#/entities/DocumentEmbedding" },
+      "description": "Admin/server-indexed vector metadata for PDF chunks."
+    },
+    "/generatedQuizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/GeneratedQuiz" },
+      "description": "User-confirmed AI-generated practice quizzes."
+    },
+    "/generatedSummaries/{summaryId}": {
+      "schema": { "$ref": "#/entities/GeneratedSummary" },
+      "description": "Cached AI chapter summaries and revision notes."
+    },
+    "/studyRecommendations/{recId}": {
+      "schema": { "$ref": "#/entities/StudyRecommendationRecord" },
+      "description": "Owner-isolated real-analytics study recommendations."
+    },
+    "/aiStudyPlans/{planId}": {
+      "schema": { "$ref": "#/entities/AiStudyPlanRecord" },
+      "description": "Owner-isolated student-approved AI study plans."
+    },
+    "/adminRoles/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Super-admin managed role records (super_admin and content_admin)."
+    },
+    "/adminPermissions/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminPermission" },
+      "description": "Super-admin managed granular Content Admin permissions."
+    },
+    "/adminAuditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminAuditLog" },
+      "description": "Append-only immutable audit logs for admin activity."
+    },
+    "/uploadJobs/{jobId}": {
+      "schema": { "$ref": "#/entities/UploadJob" },
+      "description": "Bulk PDF and ZIP ingestion job states."
+    },
+    "/aiSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/AiSettings" },
+      "description": "Admin-managed Gemini AI limits and feature toggles."
+    },
+    "/systemSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SystemSettings" },
+      "description": "Super-admin-only platform security and configuration settings."
+    },
+    "/adminIntegrationStatus/{integrationId}": {
+      "schema": { "$ref": "#/entities/AdminIntegrationStatus" },
+      "description": "Verified real status records for all 18 Google & Firebase integrations."
     }
   }
 }
